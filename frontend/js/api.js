@@ -94,11 +94,14 @@
         reject(new Error('Informe a URL do Web App antes de entrar.'));
         return;
       }
-      const popup = window.open(url, 'dynasty-auth', 'width=480,height=640');
+      const popup = window.open(url, '_blank', 'width=480,height=640');
       if (!popup) {
         reject(new Error('Popup bloqueado. Permita popups para este site.'));
         return;
       }
+      try {
+        popup.focus();
+      } catch (_) {}
       let resolved = false;
       let popupClosed = false;
       let pollTimer = null;
