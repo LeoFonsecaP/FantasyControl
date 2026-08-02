@@ -9,7 +9,6 @@ docs/schema.md      # Schema das abas
 gas/                # Apps Script (backend)
 frontend/           # Site estático
 ```
-
 ## Setup rápido
 
 > **Passo 1 confuso?** Guia detalhado: [`docs/SETUP-PASSO-1.md`](docs/SETUP-PASSO-1.md)  
