@@ -81,14 +81,15 @@
     }
   }
 
-  function authBridgeUrl() {
+  function authBridgeUrl(bridgeId) {
     const base = getApiUrl();
-    return base + '?action=authBridge';
+    return base + '?action=authBridge' + (bridgeId ? '&bridgeId=' + encodeURIComponent(bridgeId) : '');
   }
 
   function loginWithPopup() {
     return new Promise((resolve, reject) => {
-      const url = authBridgeUrl();
+      const bridgeId = 'bridge_' + Math.random().toString(36).slice(2) + Date.now();
+      const url = authBridgeUrl(bridgeId);
       if (!getApiUrl()) {
         reject(new Error('Informe a URL do Web App antes de entrar.'));
         return;
@@ -100,6 +101,33 @@
       }
       let resolved = false;
       let popupClosed = false;
+      let pollTimer = null;
+      let polling = false;
+
+      function startBridgePoll() {
+        pollTimer = setInterval(() => {
+          if (resolved || polling) return;
+          polling = true;
+          api('bridgeCheck', { bridgeId })
+            .then((data) => {
+              if (resolved || !data || !data.found) return;
+              resolved = true;
+              cleanup();
+              console.log('[Auth Bridge Poll] encontrado', data);
+              setSession(data.token, data.user);
+              try {
+                popup.close();
+              } catch (_) {}
+              resolve(data.user);
+            })
+            .catch((e) => {
+              console.warn('[Auth Bridge Poll] erro', e.message);
+            })
+            .finally(() => {
+              polling = false;
+            });
+        }, 500);
+      }
       
       const timeoutId = setTimeout(() => {
         cleanup();
@@ -117,7 +145,7 @@
             reject(new Error('Login cancelado.'));
           }
         }
-      }, 1000); // Verifica a cada 1 segundo em vez de 500ms
+      }, 1000);
       
       function onMsg(ev) {
         const data = ev.data;
@@ -148,10 +176,12 @@
       function cleanup() {
         clearTimeout(timeoutId);
         clearInterval(popupCheckTimer);
+        clearInterval(pollTimer);
         window.removeEventListener('message', onMsg);
       }
       
       window.addEventListener('message', onMsg);
+      startBridgePoll();
     });
   }
 

@@ -120,7 +120,7 @@ function actionMe_(user) {
 /**
  * Called from auth bridge HTML after Google session is available.
  */
-function bridgeCompleteLogin() {
+function bridgeCompleteLogin(bridgeId) {
   ensureSheets_();
   var email = getActiveEmail_();
   if (!email) {
@@ -137,14 +137,23 @@ function bridgeCompleteLogin() {
   }
   var token = mintSessionToken_(email);
   var user = buildUserFromEmail_(email);
-  return {
+  var result = {
     ok: true,
     token: token,
     user: actionMe_(user)
   };
+  if (bridgeId) {
+    try {
+      CacheService.getScriptCache().put('bridge:' + String(bridgeId), JSON.stringify(result), 300);
+    } catch (e) {
+      // ignore cache write failure
+    }
+  }
+  return result;
 }
 
-function authBridgeHtml_() {
+function authBridgeHtml_(params) {
+  var bridgeId = String((params && params.bridgeId) || '');
   var html = HtmlService.createHtmlOutput(
     '<!DOCTYPE html><html><head><base target="_top">' +
       '<meta charset="utf-8"><title>Login Liga Dynasty</title>' +
@@ -172,10 +181,32 @@ function authBridgeHtml_() {
       '}' +
       'google.script.run.withSuccessHandler(done).withFailureHandler(function(e){' +
       '  done({ok:false,error:String(e&&e.message||e)});' +
-      '}).bridgeCompleteLogin();' +
+      '}).bridgeCompleteLogin(' + JSON.stringify(bridgeId) + ');' +
       '</script></body></html>'
   );
   html.setTitle('Login — Liga Dynasty');
   html.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   return html;
+}
+
+function actionBridgeCheck_(params) {
+  var bridgeId = String((params && params.bridgeId) || '').trim();
+  if (!bridgeId) {
+    return { found: false };
+  }
+  var payload = CacheService.getScriptCache().get('bridge:' + bridgeId);
+  if (!payload) {
+    return { found: false };
+  }
+  try {
+    var result = JSON.parse(payload);
+    CacheService.getScriptCache().remove('bridge:' + bridgeId);
+    return {
+      found: true,
+      token: result.token,
+      user: result.user
+    };
+  } catch (e) {
+    return { found: false };
+  }
 }

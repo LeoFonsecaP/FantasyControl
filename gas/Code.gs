@@ -30,7 +30,11 @@ function handleRequest_(e, body) {
     var action = String(params.action || 'me');
 
     if (action === 'authBridge') {
-      return authBridgeHtml_();
+      return authBridgeHtml_(params);
+    }
+
+    if (action === 'bridgeCheck') {
+      return jsonResponse_({ ok: true, data: actionBridgeCheck_(params) });
     }
 
     if (action === 'ping') {
