@@ -157,8 +157,17 @@ function authBridgeHtml_() {
       'function done(result){' +
       '  var msg=document.getElementById("msg");' +
       '  if(!result||!result.ok){msg.className="err";msg.textContent=(result&&result.error)||"Falha no login";return;}' +
-      '  msg.textContent="Login ok. Pode fechar esta janela.";' +
-      '  try{if(window.opener){window.opener.postMessage({type:"dynasty-auth",payload:result},"*");}}catch(e){}' +
+      '  msg.textContent="Login ok. Enviando resposta para a página principal...";' +
+      '  try{' +
+      '    if(window.opener){' +
+      '      window.opener.postMessage({type:"dynasty-auth",payload:result},"*");' +
+      '      msg.textContent="Login ok. Resposta enviada. Pode fechar esta janela.";' +
+      '    } else {' +
+      '      msg.textContent="Login ok, mas opener não está disponível. Não foi possível avisar a página principal.";' +
+      '    }' +
+      '  }catch(e){' +
+      '    msg.textContent="Login ok, mas falha no postMessage: "+String(e&&e.message||e);' +
+      '  }' +
       '  setTimeout(function(){window.close();},2000);' +
       '}' +
       'google.script.run.withSuccessHandler(done).withFailureHandler(function(e){' +
