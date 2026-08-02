@@ -1,0 +1,8 @@
+node_modules/
+.clasp.json
+!.clasp.json.example
+.DS_Store
+*.log
+.env
+credentials.json
+token.json
