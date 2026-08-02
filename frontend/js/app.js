@@ -90,10 +90,16 @@
       err.innerHTML = '';
       const url = screen.querySelector('#api-url').value.trim();
       try {
+        console.log('[Login] Iniciando login para URL:', url);
         DynastyAPI.setApiUrl(url);
+        console.log('[Login] Abrindo popup...');
         currentUser = await DynastyAPI.loginWithPopup();
+        console.log('[Login] Popup retornou', currentUser);
+        console.log('[Login] Chamando bootApp...');
         await bootApp();
+        console.log('[Login] Completo');
       } catch (e) {
+        console.error('[Login] Erro:', e.message);
         err.innerHTML = UI.error(e.message || String(e));
       }
     });
@@ -124,14 +130,19 @@
   }
 
   async function bootApp() {
+    console.log('[Boot] Iniciando bootApp');
     if (!DynastyAPI.getToken()) {
+      console.log('[Boot] Sem token, renderizando login');
       renderLogin();
       return;
     }
+    console.log('[Boot] Token encontrado, chamando api(me)...');
     try {
       currentUser = await DynastyAPI.api('me');
+      console.log('[Boot] api(me) respondeu', currentUser);
       DynastyAPI.setSession(DynastyAPI.getToken(), currentUser);
     } catch (e) {
+      console.error('[Boot] api(me) falhou', e.message);
       DynastyAPI.clearSession();
       renderLogin();
       const app = document.getElementById('app');
@@ -142,6 +153,7 @@
       return;
     }
 
+    console.log('[Boot] Renderizando shell');
     const app = document.getElementById('app');
     app.innerHTML = shell(currentUser);
     app.querySelector('#logout').addEventListener('click', (ev) => {
@@ -154,6 +166,7 @@
       app.querySelector('#main-nav').classList.toggle('open');
     });
     window.App = { user: currentUser, navigate };
+    console.log('[Boot] Completo, navegando...');
     await navigate();
   }
 

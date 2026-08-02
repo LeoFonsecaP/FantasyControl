@@ -159,7 +159,7 @@ function authBridgeHtml_() {
       '  if(!result||!result.ok){msg.className="err";msg.textContent=(result&&result.error)||"Falha no login";return;}' +
       '  msg.textContent="Login ok. Pode fechar esta janela.";' +
       '  try{if(window.opener){window.opener.postMessage({type:"dynasty-auth",payload:result},"*");}}catch(e){}' +
-      '  setTimeout(function(){window.close();},800);' +
+      '  setTimeout(function(){window.close();},2000);' +
       '}' +
       'google.script.run.withSuccessHandler(done).withFailureHandler(function(e){' +
       '  done({ok:false,error:String(e&&e.message||e)});' +

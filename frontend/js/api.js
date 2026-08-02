@@ -45,24 +45,40 @@
     if (!base) {
       throw new Error('Configure a URL do Apps Script (API) nas configurações de login.');
     }
-    const body = Object.assign({ action, token: getToken() }, payload);
-    const res = await fetch(base, {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(body)
-    });
-    const text = await res.text();
-    let json;
+    const token = getToken();
+    const body = Object.assign({ action, token }, payload);
+    
+    console.log('[API]', action, { token: token ? token.slice(0, 20) + '...' : 'NENHUM', ...payload });
+    
     try {
-      json = JSON.parse(text);
-    } catch {
-      throw new Error('Resposta inválida da API. Verifique o deploy do Apps Script.');
+      const res = await fetch(base, {
+        method: 'POST',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(body)
+      });
+      
+      console.log('[API Response]', action, res.status, res.statusText);
+      
+      const text = await res.text();
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        console.error('[API Parse Error]', action, text.slice(0, 200));
+        throw new Error('Resposta inválida da API. Verifique o deploy do Apps Script.');
+      }
+      
+      console.log('[API Result]', action, json);
+      
+      if (!json.ok) {
+        throw new Error(json.error || 'Erro na API');
+      }
+      return json.data;
+    } catch (e) {
+      console.error('[API Error]', action, e.message);
+      throw e;
     }
-    if (!json.ok) {
-      throw new Error(json.error || 'Erro na API');
-    }
-    return json.data;
   }
 
   function authBridgeUrl() {
@@ -82,30 +98,59 @@
         reject(new Error('Popup bloqueado. Permita popups para este site.'));
         return;
       }
-      let authSucceeded = false;
-      const timer = setInterval(() => {
+      let resolved = false;
+      let popupClosed = false;
+      
+      const timeoutId = setTimeout(() => {
+        cleanup();
+        if (!resolved) reject(new Error('Timeout em autenticação. Tente novamente.'));
+      }, 30000); // 30 segundos de timeout total
+      
+      const popupCheckTimer = setInterval(() => {
         if (popup.closed) {
-          clearInterval(timer);
-          window.removeEventListener('message', onMsg);
-          if (!authSucceeded && !getToken()) reject(new Error('Login cancelado.'));
+          popupClosed = true;
+          clearInterval(popupCheckTimer);
+          // Se o popup fecha mas já recebemos sucesso, deixa como está
+          // Só rejeita se não recebemos sucesso
+          if (!resolved) {
+            cleanup();
+            reject(new Error('Login cancelado.'));
+          }
         }
-      }, 500);
+      }, 1000); // Verifica a cada 1 segundo em vez de 500ms
+      
       function onMsg(ev) {
         const data = ev.data;
+        console.log('[Auth Message]', data);
         if (!data || data.type !== 'dynasty-auth') return;
-        clearInterval(timer);
-        window.removeEventListener('message', onMsg);
+        
+        if (!data.payload || !data.payload.ok) {
+          cleanup();
+          if (!resolved) {
+            resolved = true;
+            const err = (data.payload && data.payload.error) || 'Falha no login';
+            console.error('[Auth Error]', err);
+            reject(new Error(err));
+          }
+          return;
+        }
+        
+        cleanup();
+        resolved = true;
+        console.log('[Auth Success]', { email: data.payload.user.email, token: data.payload.token.slice(0, 20) + '...' });
+        setSession(data.payload.token, data.payload.user);
         try {
           popup.close();
         } catch (_) {}
-        if (!data.payload || !data.payload.ok) {
-          reject(new Error((data.payload && data.payload.error) || 'Falha no login'));
-          return;
-        }
-        authSucceeded = true;
-        setSession(data.payload.token, data.payload.user);
         resolve(data.payload.user);
       }
+      
+      function cleanup() {
+        clearTimeout(timeoutId);
+        clearInterval(popupCheckTimer);
+        window.removeEventListener('message', onMsg);
+      }
+      
       window.addEventListener('message', onMsg);
     });
   }
