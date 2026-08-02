@@ -82,11 +82,12 @@
         reject(new Error('Popup bloqueado. Permita popups para este site.'));
         return;
       }
+      let authSucceeded = false;
       const timer = setInterval(() => {
         if (popup.closed) {
           clearInterval(timer);
           window.removeEventListener('message', onMsg);
-          if (!getToken()) reject(new Error('Login cancelado.'));
+          if (!authSucceeded && !getToken()) reject(new Error('Login cancelado.'));
         }
       }, 500);
       function onMsg(ev) {
@@ -101,6 +102,7 @@
           reject(new Error((data.payload && data.payload.error) || 'Falha no login'));
           return;
         }
+        authSucceeded = true;
         setSession(data.payload.token, data.payload.user);
         resolve(data.payload.user);
       }
