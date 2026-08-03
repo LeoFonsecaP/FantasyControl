@@ -12,8 +12,6 @@
       const data = await DynastyAPI.api('getManagementData');
       const teams = data.times || [];
       const players = data.players || [];
-      const admins = Array.isArray(data.admins) ? data.admins : [];
-      const adminList = admins.length ? admins.join(', ') : 'Nenhum admin configurado';
 
       const teamRows = teams.length
         ? teams
@@ -115,9 +113,6 @@
             <tbody>${playerRows}</tbody>
           </table>
         </div>
-
-        <h2>Usuários autorizados</h2>
-        <p class="muted">${UI.escapeHtml(adminList)}</p>
       `;
 
       const msg = view.querySelector('#mgmt-msg');
