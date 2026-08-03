@@ -1,9 +1,8 @@
 /**
  * Liga Dynasty - bundle gerado automaticamente.
  * Cole este arquivo inteiro em Extensoes -> Apps Script -> Codigo.gs
- * Regenerar: powershell -File scripts/bundle-gas.ps1
+ * Regenerar: python3 - <<'PY' ...
  */
-
 
 // ========== Config.gs ==========
 
@@ -297,7 +296,7 @@ function actionMe_(user) {
 /**
  * Called from auth bridge HTML after Google session is available.
  */
-function bridgeCompleteLogin() {
+function bridgeCompleteLogin(bridgeId) {
   ensureSheets_();
   var email = getActiveEmail_();
   if (!email) {
@@ -314,14 +313,23 @@ function bridgeCompleteLogin() {
   }
   var token = mintSessionToken_(email);
   var user = buildUserFromEmail_(email);
-  return {
+  var result = {
     ok: true,
     token: token,
     user: actionMe_(user)
   };
+  if (bridgeId) {
+    try {
+      CacheService.getScriptCache().put('bridge:' + String(bridgeId), JSON.stringify(result), 300);
+    } catch (e) {
+      // ignore cache write failure
+    }
+  }
+  return result;
 }
 
-function authBridgeHtml_() {
+function authBridgeHtml_(params) {
+  var bridgeId = String((params && params.bridgeId) || '');
   var html = HtmlService.createHtmlOutput(
     '<!DOCTYPE html><html><head><base target="_top">' +
       '<meta charset="utf-8"><title>Login Liga Dynasty</title>' +
@@ -334,18 +342,49 @@ function authBridgeHtml_() {
       'function done(result){' +
       '  var msg=document.getElementById("msg");' +
       '  if(!result||!result.ok){msg.className="err";msg.textContent=(result&&result.error)||"Falha no login";return;}' +
-      '  msg.textContent="Login ok. Pode fechar esta janela.";' +
-      '  try{if(window.opener){window.opener.postMessage({type:"dynasty-auth",payload:result},"*");}}catch(e){}' +
-      '  setTimeout(function(){window.close();},800);' +
+      '  msg.textContent="Login ok. Enviando resposta para a página principal...";' +
+      '  try{' +
+      '    if(window.opener){' +
+      '      window.opener.postMessage({type:"dynasty-auth",payload:result},"*");' +
+      '      msg.textContent="Login ok. Resposta enviada. Pode fechar esta janela.";' +
+      '    } else {' +
+      '      msg.textContent="Login ok, mas opener não está disponível. Não foi possível avisar a página principal.";' +
+      '    }' +
+      '  }catch(e){' +
+      '    msg.textContent="Login ok, mas falha no postMessage: "+String(e&&e.message||e);' +
+      '  }' +
+      '  setTimeout(function(){window.close();},2000);' +
       '}' +
       'google.script.run.withSuccessHandler(done).withFailureHandler(function(e){' +
       '  done({ok:false,error:String(e&&e.message||e)});' +
-      '}).bridgeCompleteLogin();' +
+      '}).bridgeCompleteLogin(' + JSON.stringify(bridgeId) + ');' +
       '</script></body></html>'
   );
   html.setTitle('Login — Liga Dynasty');
   html.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   return html;
+}
+
+function actionBridgeCheck_(params) {
+  var bridgeId = String((params && params.bridgeId) || '').trim();
+  if (!bridgeId) {
+    return { found: false };
+  }
+  var payload = CacheService.getScriptCache().get('bridge:' + bridgeId);
+  if (!payload) {
+    return { found: false };
+  }
+  try {
+    var result = JSON.parse(payload);
+    CacheService.getScriptCache().remove('bridge:' + bridgeId);
+    return {
+      found: true,
+      token: result.token,
+      user: result.user
+    };
+  } catch (e) {
+    return { found: false };
+  }
 }
 
 
@@ -490,6 +529,121 @@ function actionGetTeam_(user, params) {
     jogadores: roster,
     picks: picks
   };
+}
+
+function actionGetManagementData_(user, params) {
+  requireAdmin_(user);
+  var teams = sheetToObjects_(SHEET_NAMES.TIMES).map(function (t) {
+    return {
+      id: String(t.ID),
+      nome: String(t.Nome_Time),
+      responsavel: String(t.Responsavel || ''),
+      email: String(t.Email || '')
+    };
+  });
+  var players = getAllPlayers_().map(function (p) {
+    return {
+      id: p.id,
+      jogador: p.jogador,
+      timeId: p.timeId,
+      round: p.round,
+      anoDraft: p.anoDraft,
+      status: p.status
+    };
+  });
+  return {
+    times: teams,
+    players: players,
+    admins: getAdminEmails_()
+  };
+}
+
+function actionUpsertTeam_(user, params) {
+  requireAdmin_(user);
+  return withLock_(function () {
+    var id = String(params.id || '').trim();
+    var nome = String(params.nome || '').trim();
+    var responsavel = String(params.responsavel || '').trim();
+    var email = String(params.email || '').trim();
+
+    if (!nome) throw new Error('Informe o nome do time.');
+
+    var sheet = getSheet_(SHEET_NAMES.TIMES);
+    var rows = sheetToObjects_(SHEET_NAMES.TIMES);
+    var existing = null;
+    for (var i = 0; i < rows.length; i++) {
+      if (id && String(rows[i].ID) === id) {
+        existing = rows[i];
+        break;
+      }
+      if (!id && String(rows[i].Nome_Time).toLowerCase() === nome.toLowerCase()) {
+        existing = rows[i];
+        break;
+      }
+    }
+
+    if (!id) {
+      id = nextId_('T', SHEET_NAMES.TIMES, 'ID');
+    }
+
+    if (existing) {
+      sheet.getRange(existing._row, 2).setValue(nome);
+      sheet.getRange(existing._row, 3).setValue(responsavel);
+      sheet.getRange(existing._row, 4).setValue(email);
+      return { team: { id: String(existing.ID || id), nome: nome, responsavel: responsavel, email: email } };
+    }
+
+    sheet.appendRow([id, nome, responsavel, email]);
+    return { team: { id: id, nome: nome, responsavel: responsavel, email: email } };
+  });
+}
+
+function actionUpsertPlayer_(user, params) {
+  requireAdmin_(user);
+  return withLock_(function () {
+    var id = String(params.id || '').trim();
+    var jogador = String(params.jogador || '').trim();
+    var timeId = String(params.timeId || '').trim();
+    var round = parseInt(params.round, 10) || 1;
+    var anoDraft = parseInt(params.anoDraft, 10) || getTemporadaAtual_();
+    var status = String(params.status || 'ativo').trim().toLowerCase();
+
+    if (!jogador) throw new Error('Informe o nome do jogador.');
+    if (!timeId) throw new Error('Selecione um time para o jogador.');
+
+    var sheet = getSheet_(SHEET_NAMES.JOGADORES);
+    var rows = sheetToObjects_(SHEET_NAMES.JOGADORES);
+    var existing = null;
+    for (var i = 0; i < rows.length; i++) {
+      if (id && String(rows[i].ID) === id) {
+        existing = rows[i];
+        break;
+      }
+      if (!id && String(rows[i].Jogador).toLowerCase() === jogador.toLowerCase()) {
+        existing = rows[i];
+        break;
+      }
+    }
+
+    var limite = calcularLimite_(round, anoDraft);
+
+    if (!id) {
+      id = nextId_('J', SHEET_NAMES.JOGADORES, 'ID');
+    }
+
+    if (existing) {
+      sheet.getRange(existing._row, 2).setValue(jogador);
+      sheet.getRange(existing._row, 3).setValue(timeId);
+      sheet.getRange(existing._row, 4).setValue(round);
+      sheet.getRange(existing._row, 5).setValue(anoDraft);
+      sheet.getRange(existing._row, 6).setValue(limite);
+      sheet.getRange(existing._row, 7).setValue(status);
+      return { player: { id: String(existing.ID || id), jogador: jogador, timeId: timeId, round: round, anoDraft: anoDraft, limite: limite, status: status } };
+    }
+
+    sheet.appendRow([id, jogador, timeId, round, anoDraft, limite, status]);
+    return { player: { id: id, jogador: jogador, timeId: timeId, round: round, anoDraft: anoDraft, limite: limite, status: status } };
+  });
 }
 
 function actionGetExpiring_(user, params) {
@@ -1078,7 +1232,11 @@ function handleRequest_(e, body) {
     var action = String(params.action || 'me');
 
     if (action === 'authBridge') {
-      return authBridgeHtml_();
+      return authBridgeHtml_(params);
+    }
+
+    if (action === 'bridgeCheck') {
+      return jsonResponse_({ ok: true, data: actionBridgeCheck_(params) });
     }
 
     if (action === 'ping') {
@@ -1118,6 +1276,15 @@ function handleRequest_(e, body) {
         break;
       case 'upsertStanding':
         data = actionUpsertStanding_(user, params);
+        break;
+      case 'getManagementData':
+        data = actionGetManagementData_(user, params);
+        break;
+      case 'upsertTeam':
+        data = actionUpsertTeam_(user, params);
+        break;
+      case 'upsertPlayer':
+        data = actionUpsertPlayer_(user, params);
         break;
       case 'seed':
         data = actionSeed_(user, params);
@@ -1397,4 +1564,3 @@ function menuShowDeployHelp() {
     ui.ButtonSet.OK
   );
 }
-

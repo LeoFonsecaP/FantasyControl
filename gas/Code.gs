@@ -75,6 +75,15 @@ function handleRequest_(e, body) {
       case 'upsertStanding':
         data = actionUpsertStanding_(user, params);
         break;
+      case 'getManagementData':
+        data = actionGetManagementData_(user, params);
+        break;
+      case 'upsertTeam':
+        data = actionUpsertTeam_(user, params);
+        break;
+      case 'upsertPlayer':
+        data = actionUpsertPlayer_(user, params);
+        break;
       case 'seed':
         data = actionSeed_(user, params);
         break;

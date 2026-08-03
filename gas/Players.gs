@@ -139,6 +139,121 @@ function actionGetTeam_(user, params) {
   };
 }
 
+function actionGetManagementData_(user, params) {
+  requireAdmin_(user);
+  var teams = sheetToObjects_(SHEET_NAMES.TIMES).map(function (t) {
+    return {
+      id: String(t.ID),
+      nome: String(t.Nome_Time),
+      responsavel: String(t.Responsavel || ''),
+      email: String(t.Email || '')
+    };
+  });
+  var players = getAllPlayers_().map(function (p) {
+    return {
+      id: p.id,
+      jogador: p.jogador,
+      timeId: p.timeId,
+      round: p.round,
+      anoDraft: p.anoDraft,
+      status: p.status
+    };
+  });
+  return {
+    times: teams,
+    players: players,
+    admins: getAdminEmails_()
+  };
+}
+
+function actionUpsertTeam_(user, params) {
+  requireAdmin_(user);
+  return withLock_(function () {
+    var id = String(params.id || '').trim();
+    var nome = String(params.nome || '').trim();
+    var responsavel = String(params.responsavel || '').trim();
+    var email = String(params.email || '').trim();
+
+    if (!nome) throw new Error('Informe o nome do time.');
+
+    var sheet = getSheet_(SHEET_NAMES.TIMES);
+    var rows = sheetToObjects_(SHEET_NAMES.TIMES);
+    var existing = null;
+    for (var i = 0; i < rows.length; i++) {
+      if (id && String(rows[i].ID) === id) {
+        existing = rows[i];
+        break;
+      }
+      if (!id && String(rows[i].Nome_Time).toLowerCase() === nome.toLowerCase()) {
+        existing = rows[i];
+        break;
+      }
+    }
+
+    if (!id) {
+      id = nextId_('T', SHEET_NAMES.TIMES, 'ID');
+    }
+
+    if (existing) {
+      sheet.getRange(existing._row, 2).setValue(nome);
+      sheet.getRange(existing._row, 3).setValue(responsavel);
+      sheet.getRange(existing._row, 4).setValue(email);
+      return { team: { id: String(existing.ID || id), nome: nome, responsavel: responsavel, email: email } };
+    }
+
+    sheet.appendRow([id, nome, responsavel, email]);
+    return { team: { id: id, nome: nome, responsavel: responsavel, email: email } };
+  });
+}
+
+function actionUpsertPlayer_(user, params) {
+  requireAdmin_(user);
+  return withLock_(function () {
+    var id = String(params.id || '').trim();
+    var jogador = String(params.jogador || '').trim();
+    var timeId = String(params.timeId || '').trim();
+    var round = parseInt(params.round, 10) || 1;
+    var anoDraft = parseInt(params.anoDraft, 10) || getTemporadaAtual_();
+    var status = String(params.status || 'ativo').trim().toLowerCase();
+
+    if (!jogador) throw new Error('Informe o nome do jogador.');
+    if (!timeId) throw new Error('Selecione um time para o jogador.');
+
+    var sheet = getSheet_(SHEET_NAMES.JOGADORES);
+    var rows = sheetToObjects_(SHEET_NAMES.JOGADORES);
+    var existing = null;
+    for (var i = 0; i < rows.length; i++) {
+      if (id && String(rows[i].ID) === id) {
+        existing = rows[i];
+        break;
+      }
+      if (!id && String(rows[i].Jogador).toLowerCase() === jogador.toLowerCase()) {
+        existing = rows[i];
+        break;
+      }
+    }
+
+    var limite = calcularLimite_(round, anoDraft);
+
+    if (!id) {
+      id = nextId_('J', SHEET_NAMES.JOGADORES, 'ID');
+    }
+
+    if (existing) {
+      sheet.getRange(existing._row, 2).setValue(jogador);
+      sheet.getRange(existing._row, 3).setValue(timeId);
+      sheet.getRange(existing._row, 4).setValue(round);
+      sheet.getRange(existing._row, 5).setValue(anoDraft);
+      sheet.getRange(existing._row, 6).setValue(limite);
+      sheet.getRange(existing._row, 7).setValue(status);
+      return { player: { id: String(existing.ID || id), jogador: jogador, timeId: timeId, round: round, anoDraft: anoDraft, limite: limite, status: status } };
+    }
+
+    sheet.appendRow([id, jogador, timeId, round, anoDraft, limite, status]);
+    return { player: { id: id, jogador: jogador, timeId: timeId, round: round, anoDraft: anoDraft, limite: limite, status: status } };
+  });
+}
+
 function actionGetExpiring_(user, params) {
   var temporada = getTemporadaAtual_();
   var anoFiltro = params.ano ? parseInt(params.ano, 10) : null;

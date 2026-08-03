@@ -114,6 +114,55 @@
         };
       case 'listTeams':
         return { times: teams };
+      case 'getManagementData':
+        return {
+          times: teams,
+          players: players.map((pl) => ({ ...pl })),
+          admins: ['alex@example.com']
+        };
+      case 'upsertTeam': {
+        const team = payload;
+        const existing = teams.find((item) => item.id === team.id);
+        if (existing) {
+          Object.assign(existing, {
+            nome: team.nome || existing.nome,
+            responsavel: team.responsavel || existing.responsavel,
+            email: team.email || existing.email
+          });
+        } else {
+          teams.push({
+            id: team.id || 'T' + String(teams.length + 1).padStart(3, '0'),
+            nome: team.nome,
+            responsavel: team.responsavel || '',
+            email: team.email || ''
+          });
+        }
+        return { ok: true };
+      }
+      case 'upsertPlayer': {
+        const player = payload;
+        const existing = players.find((item) => item.id === player.id);
+        if (existing) {
+          Object.assign(existing, {
+            jogador: player.jogador || existing.jogador,
+            timeId: player.timeId || existing.timeId,
+            round: player.round || existing.round,
+            anoDraft: player.anoDraft || existing.anoDraft,
+            status: player.status || existing.status
+          });
+        } else {
+          players.push({
+            id: player.id || 'J' + String(players.length + 1).padStart(3, '0'),
+            jogador: player.jogador,
+            timeId: player.timeId,
+            round: player.round || 1,
+            anoDraft: player.anoDraft || TEMPORADA,
+            limite: (player.anoDraft || TEMPORADA) + anos(player.round || 1),
+            status: player.status || 'ativo'
+          });
+        }
+        return { ok: true };
+      }
       case 'getDashboard':
         return {
           temporadaAtual: TEMPORADA,

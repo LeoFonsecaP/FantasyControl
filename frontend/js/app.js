@@ -9,7 +9,8 @@
     keeps: () => window.Pages.keeps(),
     history: () => window.Pages.history(),
     alerts: () => window.Pages.alerts(),
-    standings: () => window.Pages.standings()
+    standings: () => window.Pages.standings(),
+    management: () => window.Pages.management()
   };
 
   let currentUser = null;
@@ -117,6 +118,7 @@
           <a href="#/keeps" data-route="keeps">Keeps</a>
           <a href="#/history" data-route="history">Histórico</a>
           <a href="#/standings" data-route="standings">Standings</a>
+          ${user.isAdmin ? '<a href="#/management" data-route="management">Gestão</a>' : ''}
         </nav>
         <div class="user-chip">
           <div><strong>${UI.escapeHtml(user.teamName || user.email)}</strong></div>
