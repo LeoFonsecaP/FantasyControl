@@ -41,49 +41,6 @@
       .replace(/"/g, '&quot;');
   }
 
-  function shouldSkipAuth() {
-    const params = new URLSearchParams(location.search);
-    const skipParam = params.get('skipAuth');
-    if (skipParam === '1' || skipParam === 'true') return true;
-    if (skipParam === '0' || skipParam === 'false') return false;
-
-    const stored = localStorage.getItem('dynasty_skip_auth');
-    if (stored !== null) return stored === '1' || stored === 'true';
-
-    return true;
-  }
-
-  function getDemoUser() {
-    return {
-      email: 'demo@fantasycontrol.local',
-      teamName: 'Time Demo',
-      isAdmin: true
-    };
-  }
-
-  async function tryAutoLogin() {
-    if (DynastyAPI.getToken()) return true;
-
-    if (!DynastyAPI.getApiUrl()) {
-      DynastyAPI.setApiUrl('mock');
-    }
-
-    if (shouldSkipAuth()) {
-      const demoUser = getDemoUser();
-      currentUser = demoUser;
-      DynastyAPI.setSession('mock-token', demoUser);
-      return true;
-    }
-
-    try {
-      currentUser = await DynastyAPI.loginWithPopup();
-      return Boolean(currentUser);
-    } catch (e) {
-      console.error('[Boot] Auto-login falhou', e.message);
-      return false;
-    }
-  }
-
   window.UI = {
     el,
     escapeHtml,
@@ -175,15 +132,6 @@
   async function bootApp() {
     console.log('[Boot] Iniciando bootApp');
     if (!DynastyAPI.getToken()) {
-      if (shouldSkipAuth()) {
-        console.log('[Boot] Pulando login por configuração de demonstração');
-        const loggedIn = await tryAutoLogin();
-        if (loggedIn) {
-          await bootApp();
-          return;
-        }
-      }
-
       console.log('[Boot] Sem token, renderizando login');
       renderLogin();
       return;
@@ -224,13 +172,6 @@
 
   async function navigate() {
     if (!DynastyAPI.getToken()) {
-      if (shouldSkipAuth()) {
-        const loggedIn = await tryAutoLogin();
-        if (!loggedIn) {
-          renderLogin();
-        }
-        return;
-      }
       renderLogin();
       return;
     }

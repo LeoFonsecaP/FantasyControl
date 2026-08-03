@@ -54,7 +54,7 @@
       const res = await fetch(base, {
         method: 'POST',
         redirect: 'follow',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        headers: { 'Content-Type': 'text/plain;' },
         body: JSON.stringify(body)
       });
       
