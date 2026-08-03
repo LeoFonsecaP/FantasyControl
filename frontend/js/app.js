@@ -74,7 +74,7 @@
   function shell(user) {
     return `
       <header class="app-header">
-        <a class="brand" href="#/dashboard">Liga Dynasty</a>
+        <a class="brand" href="#/dashboard">Mickey Mouse Dynasty</a>
         <button class="mobile-nav-toggle" type="button" id="nav-toggle" aria-label="Menu">Menu</button>
         <nav class="nav" id="main-nav">
           <a href="#/dashboard" data-route="dashboard">Dashboard</a>
@@ -83,12 +83,8 @@
           <a href="#/keeps" data-route="keeps">Keeps</a>
           <a href="#/history" data-route="history">Histórico</a>
           <a href="#/standings" data-route="standings">Standings</a>
-          ${user.isAdmin ? '<a href="#/management" data-route="management">Gestão</a>' : ''}
+          <a href="#/management" data-route="management">Gestão</a>
         </nav>
-        <div class="user-chip">
-          <div><strong>${UI.escapeHtml(user.teamName || user.email || 'Liga Dynasty')}</strong></div>
-          <div>${UI.escapeHtml(user.email || 'usuário')}${user.isAdmin ? ' · admin' : ''}</div>
-        </div>
       </header>
       <main id="view"></main>
     `;
