@@ -150,7 +150,6 @@
             email: view.querySelector('#team-email').value.trim()
           });
           showMessage('Time salvo com sucesso.');
-          await App.navigate();
         } catch (e) {
           showMessage(e.message || String(e), 'error');
         }
@@ -169,7 +168,6 @@
             status: view.querySelector('#player-status').value
           });
           showMessage('Jogador salvo com sucesso.');
-          await App.navigate();
         } catch (e) {
           showMessage(e.message || String(e), 'error');
         }
