@@ -43,7 +43,7 @@
   async function api(action, payload = {}) {
     const base = getApiUrl();
     if (!base) {
-      throw new Error('Configure a URL do Apps Script (API) nas configurações de login.');
+      throw new Error('Configure a URL do Apps Script antes de carregar o dashboard.');
     }
     const token = getToken();
     const body = Object.assign({ action, token }, payload);

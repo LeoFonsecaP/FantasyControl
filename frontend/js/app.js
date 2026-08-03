@@ -63,47 +63,12 @@
     }
   };
 
-  function renderLogin() {
-    const app = document.getElementById('app');
-    const savedUrl = DynastyAPI.getApiUrl();
-    app.innerHTML = '';
-    const screen = el(`
-      <div class="login-screen">
-        <div class="login-panel">
-          <p class="brand-hero">Liga Dynasty</p>
-          <p class="tagline">Keepers, picks e trocas — tudo fora da planilha.</p>
-          <label class="field" style="text-align:left;margin-bottom:1rem">
-            URL do Apps Script (Web App)
-            <input type="text" id="api-url" placeholder="https://script.google.com/macros/s/…/exec ou mock" value="${escapeHtml(savedUrl)}" />
-          </label>
-          <div id="login-error"></div>
-          <button class="btn" id="btn-login" type="button">Entrar com Google</button>
-          <p class="muted" style="margin-top:1.25rem;font-size:0.85rem">
-            Só e-mails cadastrados na planilha (Times / admins) entram.
-            Para demo local, use a URL <code>mock</code>.
-          </p>
-        </div>
-      </div>
-    `);
-    app.appendChild(screen);
-    screen.querySelector('#btn-login').addEventListener('click', async () => {
-      const err = screen.querySelector('#login-error');
-      err.innerHTML = '';
-      const url = screen.querySelector('#api-url').value.trim();
-      try {
-        console.log('[Login] Iniciando login para URL:', url);
-        DynastyAPI.setApiUrl(url);
-        console.log('[Login] Abrindo popup...');
-        currentUser = await DynastyAPI.loginWithPopup();
-        console.log('[Login] Popup retornou', currentUser);
-        console.log('[Login] Chamando bootApp...');
-        await bootApp();
-        console.log('[Login] Completo');
-      } catch (e) {
-        console.error('[Login] Erro:', e.message);
-        err.innerHTML = UI.error(e.message || String(e));
-      }
-    });
+  function getInitialUser() {
+    const cached = DynastyAPI.getCachedUser();
+    if (cached && typeof cached === 'object') {
+      return cached;
+    }
+    return { email: 'usuario@liga', teamName: 'Liga Dynasty', isAdmin: false };
   }
 
   function shell(user) {
@@ -121,10 +86,8 @@
           ${user.isAdmin ? '<a href="#/management" data-route="management">Gestão</a>' : ''}
         </nav>
         <div class="user-chip">
-          <div><strong>${UI.escapeHtml(user.teamName || user.email)}</strong></div>
-          <div>${UI.escapeHtml(user.email)}${user.isAdmin ? ' · admin' : ''}
-            · <a href="#" id="logout">sair</a>
-          </div>
+          <div><strong>${UI.escapeHtml(user.teamName || user.email || 'Liga Dynasty')}</strong></div>
+          <div>${UI.escapeHtml(user.email || 'usuário')}${user.isAdmin ? ' · admin' : ''}</div>
         </div>
       </header>
       <main id="view"></main>
@@ -133,37 +96,12 @@
 
   async function bootApp() {
     console.log('[Boot] Iniciando bootApp');
-    if (!DynastyAPI.getToken()) {
-      console.log('[Boot] Sem token, renderizando login');
-      renderLogin();
-      return;
-    }
-    console.log('[Boot] Token encontrado, chamando api(me)...');
-    try {
-      currentUser = await DynastyAPI.api('me');
-      console.log('[Boot] api(me) respondeu', currentUser);
-      DynastyAPI.setSession(DynastyAPI.getToken(), currentUser);
-    } catch (e) {
-      console.error('[Boot] api(me) falhou', e.message);
-      DynastyAPI.clearSession();
-      renderLogin();
-      const app = document.getElementById('app');
-      const banner = document.createElement('div');
-      banner.style.cssText = 'position:fixed;top:1rem;left:50%;transform:translateX(-50%);z-index:50;width:min(480px,92%)';
-      banner.innerHTML = UI.error(e.message || 'Sessão expirada');
-      app.prepend(banner);
-      return;
-    }
+    currentUser = getInitialUser();
+    DynastyAPI.setSession('direct-access', currentUser);
 
     console.log('[Boot] Renderizando shell');
     const app = document.getElementById('app');
     app.innerHTML = shell(currentUser);
-    app.querySelector('#logout').addEventListener('click', (ev) => {
-      ev.preventDefault();
-      DynastyAPI.clearSession();
-      location.hash = '#/dashboard';
-      renderLogin();
-    });
     app.querySelector('#nav-toggle').addEventListener('click', () => {
       app.querySelector('#main-nav').classList.toggle('open');
     });
@@ -173,10 +111,6 @@
   }
 
   async function navigate() {
-    if (!DynastyAPI.getToken()) {
-      renderLogin();
-      return;
-    }
     const view = document.getElementById('view');
     if (!view) {
       await bootApp();
