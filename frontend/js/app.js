@@ -53,11 +53,26 @@
     return true;
   }
 
+  function getDemoUser() {
+    return {
+      email: 'demo@fantasycontrol.local',
+      teamName: 'Time Demo',
+      isAdmin: true
+    };
+  }
+
   async function tryAutoLogin() {
     if (DynastyAPI.getToken()) return true;
 
     if (!DynastyAPI.getApiUrl()) {
       DynastyAPI.setApiUrl('mock');
+    }
+
+    if (shouldSkipAuth()) {
+      const demoUser = getDemoUser();
+      currentUser = demoUser;
+      DynastyAPI.setSession('mock-token', demoUser);
+      return true;
     }
 
     try {
@@ -209,6 +224,13 @@
 
   async function navigate() {
     if (!DynastyAPI.getToken()) {
+      if (shouldSkipAuth()) {
+        const loggedIn = await tryAutoLogin();
+        if (!loggedIn) {
+          renderLogin();
+        }
+        return;
+      }
       renderLogin();
       return;
     }
