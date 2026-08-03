@@ -3,10 +3,6 @@
 
   window.Pages.management = async function () {
     const view = document.getElementById('view');
-    if (!App || !App.user || !App.user.isAdmin) {
-      view.innerHTML = UI.error('Acesso restrito a administradores.');
-      return;
-    }
 
     try {
       const data = await DynastyAPI.api('getManagementData');
