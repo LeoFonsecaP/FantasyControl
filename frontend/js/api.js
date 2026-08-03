@@ -94,7 +94,7 @@
         reject(new Error('Informe a URL do Web App antes de entrar.'));
         return;
       }
-      const popup = window.open(url, '_blank', 'width=480,height=640');
+      const popup = window.open(url, 'dynasty-auth-' + Date.now(), 'width=480,height=640');
       if (!popup) {
         reject(new Error('Popup bloqueado. Permita popups para este site.'));
         return;
@@ -105,6 +105,7 @@
       let resolved = false;
       let popupClosed = false;
       let pollTimer = null;
+      let closeTimeoutId = null;
       let polling = false;
 
       function startBridgePoll() {
@@ -141,11 +142,14 @@
         if (popup.closed) {
           popupClosed = true;
           clearInterval(popupCheckTimer);
-          // Se o popup fecha mas já recebemos sucesso, deixa como está
-          // Só rejeita se não recebemos sucesso
+          console.log('[Auth] popup fechado, aguardando fallback...');
           if (!resolved) {
-            cleanup();
-            reject(new Error('Login cancelado.'));
+            closeTimeoutId = setTimeout(() => {
+              if (!resolved) {
+                cleanup();
+                reject(new Error('Login cancelado.'));
+              }
+            }, 3000);
           }
         }
       }, 1000);
@@ -178,6 +182,7 @@
       
       function cleanup() {
         clearTimeout(timeoutId);
+        clearTimeout(closeTimeoutId);
         clearInterval(popupCheckTimer);
         clearInterval(pollTimer);
         window.removeEventListener('message', onMsg);
