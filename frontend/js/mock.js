@@ -18,6 +18,20 @@
     { id: 'T010', nome: 'Thunder Storm', responsavel: 'Taylor', email: 'taylor@example.com' }
   ];
 
+  const users = [
+    { email: 'alex@example.com', isAdmin: true },
+    { email: 'sam@example.com', isAdmin: false },
+    { email: 'jordan@example.com', isAdmin: false },
+    { email: 'casey@example.com', isAdmin: false },
+    { email: 'riley@example.com', isAdmin: false },
+    { email: 'morgan@example.com', isAdmin: false },
+    { email: 'quinn@example.com', isAdmin: false },
+    { email: 'avery@example.com', isAdmin: false },
+    { email: 'reese@example.com', isAdmin: false },
+    { email: 'taylor@example.com', isAdmin: false },
+    { email: 'guest@example.com', isAdmin: false }
+  ];
+
   function anos(r) {
     if (r === 1) return 4;
     if (r === 2 || r === 3) return 3;
@@ -103,22 +117,26 @@
   async function mockApi(action, payload = {}) {
     await new Promise((r) => setTimeout(r, 120));
     switch (action) {
-      case 'me':
+      case 'me': {
+        const email = 'alex@example.com';
+        const linked = teams.find((t) => String(t.email || '').toLowerCase() === email);
         return {
-          email: 'alex@example.com',
-          teamId: 'T001',
-          teamName: 'Lakers Legacy',
+          email,
+          teamId: linked ? linked.id : null,
+          teamName: linked ? linked.nome : null,
           role: 'admin',
           isAdmin: true,
           temporadaAtual: TEMPORADA
         };
+      }
       case 'listTeams':
         return { times: teams };
       case 'getManagementData':
         return {
           times: teams,
           players: players.map((pl) => ({ ...pl })),
-          admins: ['alex@example.com']
+          admins: ['alex@example.com'],
+          users
         };
       case 'upsertTeam': {
         const team = payload;
@@ -310,6 +328,19 @@
         row.posicaoFinal = parseInt(payload.posicaoFinal, 10) || 0;
         row.campeao = campeao;
         return { standing: row };
+      }
+      case 'linkUserToTeam': {
+        const email = String(payload.email || '').toLowerCase().trim();
+        const timeId = payload.timeId || '';
+        // Remove email from all teams
+        teams.forEach((t) => {
+          if (String(t.email || '').toLowerCase() === email) t.email = '';
+        });
+        if (timeId) {
+          const team = teams.find((t) => t.id === timeId);
+          if (team) team.email = email;
+        }
+        return { ok: true, message: timeId ? 'Usuário vinculado ao time.' : 'Usuário desvinculado.' };
       }
       case 'seed':
         return { message: 'Mock já está seeded.' };

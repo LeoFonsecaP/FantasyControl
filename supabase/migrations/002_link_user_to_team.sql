@@ -103,3 +103,45 @@ begin
   );
 end;
 $$;
+
+-- =========================================
+-- 3. Corrige rpc_me para tratar usuário sem time vinculado (convidado)
+--    Usa variáveis escalares para evitar ambiguidade com record no PL/pgSQL
+-- =========================================
+create or replace function public.rpc_me()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_email text;
+  v_team_id text;
+  v_team_name text;
+  v_is_admin boolean;
+  v_temporada int;
+begin
+  select email into v_email from auth.users where id = auth.uid();
+  if v_email is null then
+    raise exception 'Faça login com sua conta.';
+  end if;
+
+  select is_admin into v_is_admin from profiles where id = auth.uid();
+
+  select t.id, t.nome_time into v_team_id, v_team_name
+  from times t
+  where lower(t.email) = lower(v_email)
+  limit 1;
+
+  v_temporada := public.get_temporada_atual();
+
+  return jsonb_build_object(
+    'email', v_email,
+    'teamId', v_team_id,
+    'teamName', v_team_name,
+    'role', case when v_is_admin then 'admin' else 'member' end,
+    'isAdmin', coalesce(v_is_admin, false),
+    'temporadaAtual', v_temporada
+  );
+end;
+$$;

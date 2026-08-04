@@ -149,6 +149,23 @@
     }
   }
 
+  async function refreshUser() {
+    try {
+      const me = await DynastyAPI.api('me');
+      currentUser = me;
+      DynastyAPI.setCachedUser(me);
+      const chip = document.querySelector('.user-chip strong');
+      if (chip) {
+        chip.textContent = me.teamName || 'Convidado';
+      }
+      window.App = { user: currentUser, navigate, refreshUser };
+      return me;
+    } catch (e) {
+      console.warn('[Session] Erro ao atualizar usuário:', e.message);
+      return null;
+    }
+  }
+
   async function bootApp() {
     if (isBooted) return;
     isBooted = true;
@@ -184,7 +201,7 @@
       await DynastyAPI.clearSession();
       location.reload();
     });
-    window.App = { user: currentUser, navigate };
+    window.App = { user: currentUser, navigate, refreshUser };
     console.log('[Boot] Completo, navegando...');
     await navigate();
   }
@@ -211,7 +228,7 @@
     }
   }
 
-  window.App = { get user() { return currentUser; }, navigate, bootApp, parseHash };
+  window.App = { get user() { return currentUser; }, navigate, bootApp, parseHash, refreshUser };
 
   // Escuta mudanças de autenticação (login via magic link / OAuth redirect)
   DynastyAPI.onAuthStateChange((event, session) => {

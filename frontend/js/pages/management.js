@@ -225,6 +225,12 @@
           await DynastyAPI.api('linkUserToTeam', { email, timeId });
           showMessage(timeId ? 'Usuário vinculado ao time.' : 'Usuário desvinculado (convidado).');
           linkForm.reset();
+          if (window.App && typeof window.App.refreshUser === 'function') {
+            const me = await window.App.refreshUser();
+            if (me && String(me.email || '').toLowerCase() === String(email || '').toLowerCase()) {
+              showMessage(timeId ? `Vínculo atualizado: ${me.teamName || 'Convidado'}.` : 'Usuário desvinculado (convidado).');
+            }
+          }
         } catch (e) {
           showMessage(e.message || String(e), 'error');
         }
@@ -279,6 +285,9 @@
           try {
             await DynastyAPI.api('linkUserToTeam', { email, timeId: '' });
             showMessage('Usuário desvinculado (convidado).');
+            if (window.App && typeof window.App.refreshUser === 'function') {
+              await window.App.refreshUser();
+            }
           } catch (e) {
             showMessage(e.message || String(e), 'error');
           }
