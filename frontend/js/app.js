@@ -36,10 +36,10 @@
 
   function escapeHtml(s) {
     return String(s ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+      .replace(/\x26/g, '\x26amp;')
+      .replace(/</g, '\x26lt;')
+      .replace(/>/g, '\x26gt;')
+      .replace(/"/g, '\x26quot;');
   }
 
   window.UI = {
@@ -63,12 +63,26 @@
     }
   };
 
-  function getInitialUser() {
-    const cached = DynastyAPI.getCachedUser();
-    if (cached && typeof cached === 'object') {
-      return cached;
-    }
-    return { email: 'usuario@liga', teamName: 'Liga Dynasty', isAdmin: false };
+  function loginScreen() {
+    return `
+      <div class="login-screen">
+        <div class="login-box">
+          <h1>Mickey Mouse Dynasty</h1>
+          <p class="page-sub">Faça login para acessar a liga</p>
+          <div id="login-msg"></div>
+          <div class="login-actions">
+            <button class="btn" type="button" id="btn-google">Entrar com Google</button>
+            <div class="login-divider">ou</div>
+            <form id="login-magic" class="form-stack">
+              <label class="field">E-mail
+                <input type="email" id="login-email" placeholder="seu@email.com" required />
+              </label>
+              <button class="btn btn-ghost" type="submit">Enviar magic link</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   function shell(user) {
@@ -85,21 +99,76 @@
           <a href="#/standings" data-route="standings">Standings</a>
           <a href="#/management" data-route="management">Gestão</a>
         </nav>
+        <div class="user-info">
+          <span class="muted">${escapeHtml(user.email || '')}</span>
+          <button class="btn btn-ghost" type="button" id="btn-logout">Sair</button>
+        </div>
       </header>
       <main id="view"></main>
     `;
   }
 
+  function bindLoginEvents() {
+    const btnGoogle = document.getElementById('btn-google');
+    if (btnGoogle) {
+      btnGoogle.addEventListener('click', async () => {
+        const msg = document.getElementById('login-msg');
+        msg.innerHTML = '';
+        try {
+          await DynastyAPI.loginWithGoogle();
+          // O Supabase redireciona para o Google; ao voltar, onAuthStateChange dispara
+        } catch (e) {
+          msg.innerHTML = UI.error(e.message || String(e));
+        }
+      });
+    }
+
+    const magicForm = document.getElementById('login-magic');
+    if (magicForm) {
+      magicForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msg = document.getElementById('login-msg');
+        msg.innerHTML = '';
+        const email = document.getElementById('login-email').value.trim();
+        try {
+          await DynastyAPI.loginWithMagicLink(email);
+          msg.innerHTML = UI.success('Magic link enviado! Verifique seu e-mail.');
+        } catch (err) {
+          msg.innerHTML = UI.error(err.message || String(err));
+        }
+      });
+    }
+  }
+
   async function bootApp() {
     console.log('[Boot] Iniciando bootApp');
-    currentUser = getInitialUser();
-    DynastyAPI.setSession('direct-access', currentUser);
+    const app = document.getElementById('app');
+
+    // Verifica sessão do Supabase
+    try {
+      const user = await DynastyAPI.ensureSession();
+      if (!user) {
+        // Não autenticado → tela de login
+        app.innerHTML = loginScreen();
+        bindLoginEvents();
+        return;
+      }
+      currentUser = user;
+    } catch (e) {
+      console.warn('[Boot] Erro ao verificar sessão:', e.message);
+      app.innerHTML = loginScreen();
+      bindLoginEvents();
+      return;
+    }
 
     console.log('[Boot] Renderizando shell');
-    const app = document.getElementById('app');
     app.innerHTML = shell(currentUser);
     app.querySelector('#nav-toggle').addEventListener('click', () => {
       app.querySelector('#main-nav').classList.toggle('open');
+    });
+    app.querySelector('#btn-logout').addEventListener('click', async () => {
+      await DynastyAPI.clearSession();
+      location.reload();
     });
     window.App = { user: currentUser, navigate };
     console.log('[Boot] Completo, navegando...');
@@ -129,6 +198,18 @@
   }
 
   window.App = { get user() { return currentUser; }, navigate, bootApp, parseHash };
+
+  // Escuta mudanças de autenticação (login via magic link / OAuth redirect)
+  DynastyAPI.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      console.log('[Auth] Usuário autenticado, recarregando...');
+      location.reload();
+    }
+    if (event === 'SIGNED_OUT') {
+      console.log('[Auth] Usuário deslogado');
+      location.reload();
+    }
+  });
 
   window.addEventListener('hashchange', () => navigate());
   document.addEventListener('DOMContentLoaded', () => bootApp());

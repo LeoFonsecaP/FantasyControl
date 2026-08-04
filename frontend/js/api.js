@@ -1,35 +1,23 @@
 /**
- * API client for Google Apps Script Web App.
- * Uses text/plain POST to avoid CORS preflight.
+ * API client for Supabase.
+ * Uses Supabase JS client with RPC functions that replicate the GAS actions.
  */
 (function (global) {
-  const STORAGE_TOKEN = 'dynasty_token';
   const STORAGE_USER = 'dynasty_user';
-  const STORAGE_API = 'dynasty_api_url';
 
-  function getApiUrl() {
-    const fromStorage = localStorage.getItem(STORAGE_API);
-    if (fromStorage) return fromStorage.replace(/\/$/, '');
-    if (global.DYNASTY_API_URL) return String(global.DYNASTY_API_URL).replace(/\/$/, '');
-    return '';
-  }
+  // Configuração do Supabase (preenchida no index.html)
+  const SUPABASE_URL = global.DYNASTY_SUPABASE_URL || '';
+  const SUPABASE_ANON_KEY = global.DYNASTY_SUPABASE_ANON_KEY || '';
 
-  function setApiUrl(url) {
-    localStorage.setItem(STORAGE_API, url.replace(/\/$/, ''));
-  }
+  let supabase = null;
 
-  function getToken() {
-    return localStorage.getItem(STORAGE_TOKEN) || '';
-  }
-
-  function setSession(token, user) {
-    localStorage.setItem(STORAGE_TOKEN, token);
-    localStorage.setItem(STORAGE_USER, JSON.stringify(user || {}));
-  }
-
-  function clearSession() {
-    localStorage.removeItem(STORAGE_TOKEN);
-    localStorage.removeItem(STORAGE_USER);
+  function getSupabase() {
+    if (supabase) return supabase;
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      throw new Error('Configure as credenciais do Supabase no index.html.');
+    }
+    supabase = global.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    return supabase;
   }
 
   function getCachedUser() {
@@ -40,168 +28,170 @@
     }
   }
 
+  function setCachedUser(user) {
+    localStorage.setItem(STORAGE_USER, JSON.stringify(user || {}));
+  }
+
+  function clearSession() {
+    localStorage.removeItem(STORAGE_USER);
+    const sb = getSupabase();
+    return sb.auth.signOut();
+  }
+
+  async function getCurrentUser() {
+    const sb = getSupabase();
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return null;
+    return user;
+  }
+
+  /**
+   * Mapeia as actions do GAS para chamadas RPC do Supabase.
+   * Mantém a mesma interface: DynastyAPI.api(action, payload) → data
+   */
   async function api(action, payload = {}) {
-    const base = getApiUrl();
-    if (!base) {
-      throw new Error('Configure a URL do Apps Script antes de carregar o dashboard.');
+    const sb = getSupabase();
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) {
+      throw new Error('Faça login para acessar a liga.');
     }
-    const token = getToken();
-    const body = Object.assign({ action, token }, payload);
-    
-    console.log('[API]', action, { token: token ? token.slice(0, 20) + '...' : 'NENHUM', ...payload });
-    
+
+    console.log('[API]', action, payload);
+
+    let result;
+    switch (action) {
+      case 'me':
+        result = await sb.rpc('rpc_me');
+        break;
+      case 'getDashboard':
+        result = await sb.rpc('rpc_get_dashboard');
+        break;
+      case 'getTeam':
+        result = await sb.rpc('rpc_get_team', { p_time_id: payload.timeId });
+        break;
+      case 'getExpiring':
+        result = await sb.rpc('rpc_get_expiring', { p_ano: payload.ano || null });
+        break;
+      case 'getTrades':
+        result = await sb.rpc('rpc_get_trades', { p_time_id: payload.timeId || null });
+        break;
+      case 'createTrade':
+        result = await sb.rpc('rpc_create_trade', { p_lados: payload.lados });
+        break;
+      case 'getKeepCandidates':
+        result = await sb.rpc('rpc_get_keep_candidates', { p_time_id: payload.timeId });
+        break;
+      case 'setKeeps':
+        result = await sb.rpc('rpc_set_keeps', {
+          p_time_id: payload.timeId,
+          p_decisoes: payload.decisoes
+        });
+        break;
+      case 'getStandings':
+        result = await sb.rpc('rpc_get_standings', { p_ano: payload.ano || null });
+        break;
+      case 'upsertStanding':
+        result = await sb.rpc('rpc_upsert_standing', {
+          p_ano: payload.ano,
+          p_time_id: payload.timeId,
+          p_vitorias: payload.vitorias || 0,
+          p_derrotas: payload.derrotas || 0,
+          p_posicao_final: payload.posicaoFinal || 0,
+          p_campeao: payload.campeao === 'sim' || payload.campeao === true
+        });
+        break;
+      case 'getManagementData':
+        result = await sb.rpc('rpc_get_management_data');
+        break;
+      case 'upsertTeam':
+        result = await sb.rpc('rpc_upsert_team', {
+          p_id: payload.id || null,
+          p_nome: payload.nome,
+          p_responsavel: payload.responsavel || null,
+          p_email: payload.email || null
+        });
+        break;
+      case 'upsertPlayer':
+        result = await sb.rpc('rpc_upsert_player', {
+          p_id: payload.id || null,
+          p_jogador: payload.jogador,
+          p_time_id: payload.timeId,
+          p_round: payload.round || 1,
+          p_ano_draft: payload.anoDraft || null,
+          p_status: payload.status || 'ativo'
+        });
+        break;
+      case 'listTeams':
+        result = await sb.rpc('rpc_list_teams');
+        break;
+      case 'ping':
+        return { pong: true };
+      default:
+        throw new Error('Ação desconhecida: ' + action);
+    }
+
+    if (result.error) {
+      console.error('[API Error]', action, result.error);
+      throw new Error(result.error.message || 'Erro na API');
+    }
+
+    console.log('[API Result]', action, result.data);
+    return result.data;
+  }
+
+  /**
+   * Login com Google OAuth via Supabase.
+   * Abre popup de autenticação do Supabase.
+   */
+  async function loginWithGoogle() {
+    const sb = getSupabase();
+    const { data, error } = await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: global.location.origin + global.location.pathname
+      }
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Verifica se há sessão ativa e retorna o usuário enriquecido.
+   */
+  async function ensureSession() {
+    const sb = getSupabase();
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return null;
+
+    // Busca dados do usuário (me)
     try {
-      const res = await fetch(base, {
-        method: 'POST',
-        redirect: 'follow',
-        headers: { 'Content-Type': 'text/plain;' },
-        body: JSON.stringify(body)
-      });
-      
-      console.log('[API Response]', action, res.status, res.statusText);
-      
-      const text = await res.text();
-      let json;
-      try {
-        json = JSON.parse(text);
-      } catch {
-        console.error('[API Parse Error]', action, text.slice(0, 200));
-        throw new Error('Resposta inválida da API. Verifique o deploy do Apps Script.');
-      }
-      
-      console.log('[API Result]', action, json);
-      
-      if (!json.ok) {
-        throw new Error(json.error || 'Erro na API');
-      }
-      return json.data;
+      const me = await api('me');
+      setCachedUser(me);
+      return me;
     } catch (e) {
-      console.error('[API Error]', action, e.message);
-      throw e;
+      console.warn('[Session] Não foi possível buscar dados do usuário:', e.message);
+      return null;
     }
   }
 
-  function authBridgeUrl(bridgeId) {
-    const base = getApiUrl();
-    return base + '?action=authBridge' + (bridgeId ? '&bridgeId=' + encodeURIComponent(bridgeId) : '');
-  }
-
-  function loginWithPopup() {
-    return new Promise((resolve, reject) => {
-      const bridgeId = 'bridge_' + Math.random().toString(36).slice(2) + Date.now();
-      const url = authBridgeUrl(bridgeId);
-      if (!getApiUrl()) {
-        reject(new Error('Informe a URL do Web App antes de entrar.'));
-        return;
-      }
-      const popup = window.open(url, 'dynasty-auth-' + Date.now(), 'width=480,height=640');
-      if (!popup) {
-        reject(new Error('Popup bloqueado. Permita popups para este site.'));
-        return;
-      }
-      try {
-        popup.focus();
-      } catch (_) {}
-      let resolved = false;
-      let popupClosed = false;
-      let pollTimer = null;
-      let closeTimeoutId = null;
-      let polling = false;
-
-      function startBridgePoll() {
-        pollTimer = setInterval(() => {
-          if (resolved || polling) return;
-          polling = true;
-          api('bridgeCheck', { bridgeId })
-            .then((data) => {
-              if (resolved || !data || !data.found) return;
-              resolved = true;
-              cleanup();
-              console.log('[Auth Bridge Poll] encontrado', data);
-              setSession(data.token, data.user);
-              try {
-                popup.close();
-              } catch (_) {}
-              resolve(data.user);
-            })
-            .catch((e) => {
-              console.warn('[Auth Bridge Poll] erro', e.message);
-            })
-            .finally(() => {
-              polling = false;
-            });
-        }, 500);
-      }
-      
-      const timeoutId = setTimeout(() => {
-        cleanup();
-        if (!resolved) reject(new Error('Timeout em autenticação. Tente novamente.'));
-      }, 30000); // 30 segundos de timeout total
-      
-      const popupCheckTimer = setInterval(() => {
-        if (popup.closed) {
-          popupClosed = true;
-          clearInterval(popupCheckTimer);
-          console.log('[Auth] popup fechado, aguardando fallback...');
-          if (!resolved) {
-            closeTimeoutId = setTimeout(() => {
-              if (!resolved) {
-                cleanup();
-                reject(new Error('Login cancelado.'));
-              }
-            }, 3000);
-          }
-        }
-      }, 1000);
-      
-      function onMsg(ev) {
-        const data = ev.data;
-        console.log('[Auth Message]', data);
-        if (!data || data.type !== 'dynasty-auth') return;
-        
-        if (!data.payload || !data.payload.ok) {
-          cleanup();
-          if (!resolved) {
-            resolved = true;
-            const err = (data.payload && data.payload.error) || 'Falha no login';
-            console.error('[Auth Error]', err);
-            reject(new Error(err));
-          }
-          return;
-        }
-        
-        cleanup();
-        resolved = true;
-        console.log('[Auth Success]', { email: data.payload.user.email, token: data.payload.token.slice(0, 20) + '...' });
-        setSession(data.payload.token, data.payload.user);
-        try {
-          popup.close();
-        } catch (_) {}
-        resolve(data.payload.user);
-      }
-      
-      function cleanup() {
-        clearTimeout(timeoutId);
-        clearTimeout(closeTimeoutId);
-        clearInterval(popupCheckTimer);
-        clearInterval(pollTimer);
-        window.removeEventListener('message', onMsg);
-      }
-      
-      window.addEventListener('message', onMsg);
-      startBridgePoll();
+  /**
+   * Escuta mudanças de autenticação (login/logout).
+   */
+  function onAuthStateChange(callback) {
+    const sb = getSupabase();
+    return sb.auth.onAuthStateChange((event, session) => {
+      callback(event, session);
     });
   }
 
   global.DynastyAPI = {
     api,
-    getApiUrl,
-    setApiUrl,
-    getToken,
     getCachedUser,
-    setSession,
+    setCachedUser,
     clearSession,
-    loginWithPopup,
-    authBridgeUrl
+    loginWithGoogle,
+    ensureSession,
+    onAuthStateChange,
+    getSupabase
   };
 })(window);

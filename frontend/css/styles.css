@@ -152,6 +152,55 @@ main {
   font-size: 1.05rem;
 }
 
+.login-box {
+  width: min(420px, 100%);
+  text-align: center;
+  padding: 2.5rem 2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow);
+}
+
+.login-box h1 {
+  font-family: var(--display);
+  font-size: clamp(2rem, 6vw, 2.8rem);
+  font-weight: 400;
+  margin: 0 0 0.5rem;
+}
+
+.login-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.login-divider {
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
 /* —— Typography —— */
 h1.page-title {
   font-family: var(--display);
@@ -245,7 +294,8 @@ label.field {
 
 select,
 input[type='text'],
-input[type='number'] {
+input[type='number'],
+input[type='email'] {
   font-family: var(--font);
   font-size: 0.95rem;
   color: var(--ink);
