@@ -42,6 +42,14 @@ Guia passo a passo para migrar do Google Apps Script + Sheets para o Supabase.
    - **Site URL**: `https://SEU-USUARIO.github.io` (URL do GitHub Pages)
    - **Redirect URLs**: adicione `https://SEU-USUARIO.github.io/FantasyControl/` (se o site estiver em subpasta)
 
+> **⚠️ Importante**: O Supabase **valida** o `redirect_to` enviado pelo frontend contra a lista de **Redirect URLs** configurada no painel. Se a URL não estiver na lista, o Supabase **ignora** o `redirect_to` e usa o **Site URL** como fallback. Se o Site URL estiver como `http://localhost:5173` (ou similar), o Google vai redirecionar para o localhost mesmo com `DYNASTY_REDIRECT_URL` correto no `index.html`.
+
+> **Como verificar**: No painel do Supabase, vá em **Authentication → URL Configuration** e confirme:
+> - **Site URL** = `https://leofonsecap.github.io`
+> - **Redirect URLs** contém exatamente `https://leofonsecap.github.io/FantasyControl/` (com a barra final)
+>
+> Se o Site URL ainda estiver como `http://localhost:5173`, o Supabase vai usar essa URL como fallback quando o `redirect_to` não for permitido.
+
 ## 4. Configurar o frontend
 
 1. No dashboard, vá em **Project Settings** → **API**.

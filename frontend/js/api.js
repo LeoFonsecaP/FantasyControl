@@ -146,8 +146,10 @@
    * Usa DYNASTY_REDIRECT_URL se configurado, senão a URL atual.
    */
   function getRedirectUrl() {
-    if (REDIRECT_URL) return REDIRECT_URL;
-    return global.location.origin + global.location.pathname;
+    const url = REDIRECT_URL || (global.location.origin + global.location.pathname);
+    // Diagnóstico: confirma qual URL está sendo usada no fluxo OAuth
+    console.log('[Auth] Redirect URL usada:', url);
+    return url;
   }
 
   /**

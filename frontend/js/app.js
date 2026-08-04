@@ -14,6 +14,7 @@
   };
 
   let currentUser = null;
+  let isBooted = false;
 
   function parseHash() {
     const raw = (location.hash || '#/dashboard').replace(/^#\/?/, '');
@@ -134,6 +135,8 @@
   }
 
   async function bootApp() {
+    if (isBooted) return;
+    isBooted = true;
     console.log('[Boot] Iniciando bootApp');
     const app = document.getElementById('app');
 
@@ -142,6 +145,8 @@
       const user = await DynastyAPI.ensureSession();
       if (!user) {
         // Não autenticado → tela de login
+        // Reseta isBooted para permitir que o SIGNED_IN (OAuth redirect) inicialize o app depois
+        isBooted = false;
         app.innerHTML = loginScreen();
         bindLoginEvents();
         return;
@@ -149,6 +154,7 @@
       currentUser = user;
     } catch (e) {
       console.warn('[Boot] Erro ao verificar sessão:', e.message);
+      isBooted = false;
       app.innerHTML = loginScreen();
       bindLoginEvents();
       return;
@@ -195,12 +201,16 @@
   // Escuta mudanças de autenticação (login via magic link / OAuth redirect)
   DynastyAPI.onAuthStateChange((event, session) => {
     if (event === 'SIGNED_IN' && session) {
-      console.log('[Auth] Usuário autenticado, recarregando...');
-      location.reload();
+      console.log('[Auth] Usuário autenticado');
+      // Se o app ainda não foi inicializado, inicializa (evita loop de reload)
+      if (!isBooted) {
+        bootApp();
+      }
     }
     if (event === 'SIGNED_OUT') {
       console.log('[Auth] Usuário deslogado');
-      location.reload();
+      isBooted = false;
+      bootApp();
     }
   });
 
