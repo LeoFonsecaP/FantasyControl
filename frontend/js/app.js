@@ -72,13 +72,6 @@
           <div id="login-msg"></div>
           <div class="login-actions">
             <button class="btn" type="button" id="btn-google">Entrar com Google</button>
-            <div class="login-divider">ou</div>
-            <form id="login-magic" class="form-stack">
-              <label class="field">E-mail
-                <input type="email" id="login-email" placeholder="seu@email.com" required />
-              </label>
-              <button class="btn btn-ghost" type="submit">Enviar magic link</button>
-            </form>
           </div>
         </div>
       </div>
