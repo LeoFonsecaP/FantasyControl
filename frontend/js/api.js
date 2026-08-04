@@ -8,6 +8,8 @@
   // Configuração do Supabase (preenchida no index.html)
   const SUPABASE_URL = global.DYNASTY_SUPABASE_URL || '';
   const SUPABASE_ANON_KEY = global.DYNASTY_SUPABASE_ANON_KEY || '';
+  // URL de redirect pós-login (GitHub Pages). Se vazio, usa a URL atual.
+  const REDIRECT_URL = global.DYNASTY_REDIRECT_URL || '';
 
   let supabase = null;
 
@@ -140,15 +142,38 @@
   }
 
   /**
+   * Retorna a URL de redirect pós-login.
+   * Usa DYNASTY_REDIRECT_URL se configurado, senão a URL atual.
+   */
+  function getRedirectUrl() {
+    if (REDIRECT_URL) return REDIRECT_URL;
+    return global.location.origin + global.location.pathname;
+  }
+
+  /**
    * Login com Google OAuth via Supabase.
-   * Abre popup de autenticação do Supabase.
    */
   async function loginWithGoogle() {
     const sb = getSupabase();
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: global.location.origin + global.location.pathname
+        redirectTo: getRedirectUrl()
+      }
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Login com magic link (e-mail).
+   */
+  async function loginWithMagicLink(email) {
+    const sb = getSupabase();
+    const { data, error } = await sb.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: getRedirectUrl()
       }
     });
     if (error) throw error;
@@ -190,6 +215,7 @@
     setCachedUser,
     clearSession,
     loginWithGoogle,
+    loginWithMagicLink,
     ensureSession,
     onAuthStateChange,
     getSupabase

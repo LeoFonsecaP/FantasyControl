@@ -54,8 +54,12 @@ Guia passo a passo para migrar do Google Apps Script + Sheets para o Supabase.
 <script>
   window.DYNASTY_SUPABASE_URL = 'https://SEU-PROJETO.supabase.co';
   window.DYNASTY_SUPABASE_ANON_KEY = 'SUA-ANON-KEY';
+  // URL de redirect pós-login (GitHub Pages)
+  window.DYNASTY_REDIRECT_URL = 'https://SEU-USUARIO.github.io/FantasyControl/';
 </script>
 ```
+
+> **Importante**: `DYNASTY_REDIRECT_URL` deve apontar para a URL do GitHub Pages (não localhost), para que o redirect pós-login funcione corretamente.
 
 ## 5. Definir admin
 
