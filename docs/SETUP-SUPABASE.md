@@ -23,6 +23,7 @@ Guia passo a passo para migrar do Google Apps Script + Sheets para o Supabase.
    - Funções RPC que replicam as actions do GAS
    - Seed com dados demo (10 times, 20 jogadores, picks, standings)
 5. Execute também `supabase/migrations/002_link_user_to_team.sql` para adicionar a função de vínculo de usuário a time.
+6. Execute também `supabase/migrations/003_free_agents.sql` para adicionar a função do Free Agent Tracker (todos os jogadores por ano de expiração).
 
 ## 3. Configurar autenticação
 
@@ -110,6 +111,7 @@ Para tornar um usuário admin:
 | `getDashboard` | `rpc_get_dashboard()` |
 | `getTeam` | `rpc_get_team(p_time_id)` |
 | `getExpiring` | `rpc_get_expiring(p_ano)` |
+| `getFreeAgents` | `rpc_get_free_agents(p_ano)` |
 | `getTrades` | `rpc_get_trades(p_time_id)` |
 | `createTrade` | `rpc_create_trade(p_lados)` |
 | `getKeepCandidates` | `rpc_get_keep_candidates(p_time_id)` |

@@ -10,7 +10,8 @@
     history: () => window.Pages.history(),
     alerts: () => window.Pages.alerts(),
     standings: () => window.Pages.standings(),
-    management: () => window.Pages.management()
+    management: () => window.Pages.management(),
+    freeagents: () => window.Pages.freeagents()
   };
 
   let currentUser = null;
@@ -106,6 +107,7 @@
           <a href="#/keeps" data-route="keeps">Keeps</a>
           <a href="#/history" data-route="history">Histórico</a>
           <a href="#/standings" data-route="standings">Standings</a>
+          <a href="#/freeagents" data-route="freeagents">Free Agents</a>
           <a href="#/management" data-route="management">Gestão</a>
         </nav>
         <div class="user-info">

@@ -61,6 +61,7 @@ window.DYNASTY_REDIRECT_URL = 'https://SEU-USUARIO.github.io/FantasyControl/';
 | `getDashboard` | `rpc_get_dashboard()` |
 | `getTeam` | `rpc_get_team(p_time_id)` |
 | `getExpiring` | `rpc_get_expiring(p_ano)` |
+| `getFreeAgents` | `rpc_get_free_agents(p_ano)` |
 | `getTrades` | `rpc_get_trades(p_time_id)` |
 | `createTrade` | `rpc_create_trade(p_lados)` |
 | `getKeepCandidates` | `rpc_get_keep_candidates(p_time_id)` |
@@ -104,6 +105,7 @@ py -m http.server 5173 --directory frontend
 - [ ] Dashboard lista 10 times com contagens
 - [ ] Página do time: semáforo verde/amarelo/vermelho
 - [ ] Alertas filtrando por ano-limite
+- [ ] Free Agent Tracker listando jogadores por ano de expiração
 - [ ] Troca 2 times atualiza donos e aparece no histórico
 - [ ] Keep bloqueia jogador fora do limite
 - [ ] Admin grava standing + campeão no hall of fame
