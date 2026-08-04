@@ -71,6 +71,7 @@ window.DYNASTY_REDIRECT_URL = 'https://SEU-USUARIO.github.io/FantasyControl/';
 | `upsertTeam` | `rpc_upsert_team(...)` |
 | `upsertPlayer` | `rpc_upsert_player(...)` |
 | `listTeams` | `rpc_list_teams()` |
+| `linkUserToTeam` | `rpc_link_user_to_team(p_email, p_time_id)` |
 
 ## Regras de keeper
 

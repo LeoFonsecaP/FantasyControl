@@ -126,6 +126,12 @@
       case 'listTeams':
         result = await sb.rpc('rpc_list_teams');
         break;
+      case 'linkUserToTeam':
+        result = await sb.rpc('rpc_link_user_to_team', {
+          p_email: payload.email,
+          p_time_id: payload.timeId || null
+        });
+        break;
       case 'ping':
         return { pong: true };
       default:
@@ -147,7 +153,6 @@
    */
   function getRedirectUrl() {
     const url = REDIRECT_URL || (global.location.origin + global.location.pathname);
-    // Diagnóstico: confirma qual URL está sendo usada no fluxo OAuth
     console.log('[Auth] Redirect URL usada:', url);
     return url;
   }

@@ -109,7 +109,7 @@
           <a href="#/management" data-route="management">Gestão</a>
         </nav>
         <div class="user-info">
-          <span class="muted">${escapeHtml(user.email || '')}</span>
+          <span class="user-chip"><strong>${escapeHtml(user.teamName || 'Convidado')}</strong></span>
           <button class="btn btn-ghost" type="button" id="btn-logout">Sair</button>
         </div>
       </header>

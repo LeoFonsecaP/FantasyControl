@@ -22,6 +22,7 @@ Guia passo a passo para migrar do Google Apps Script + Sheets para o Supabase.
    - RLS (Row Level Security) com leitura para autenticados e escrita só para admin
    - Funções RPC que replicam as actions do GAS
    - Seed com dados demo (10 times, 20 jogadores, picks, standings)
+5. Execute também `supabase/migrations/002_link_user_to_team.sql` para adicionar a função de vínculo de usuário a time.
 
 ## 3. Configurar autenticação
 
@@ -119,6 +120,7 @@ Para tornar um usuário admin:
 | `upsertTeam` | `rpc_upsert_team(...)` |
 | `upsertPlayer` | `rpc_upsert_player(...)` |
 | `listTeams` | `rpc_list_teams()` |
+| `linkUserToTeam` | `rpc_link_user_to_team(p_email, p_time_id)` |
 
 ## Segurança
 

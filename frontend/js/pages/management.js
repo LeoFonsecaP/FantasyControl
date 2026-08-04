@@ -8,6 +8,7 @@
       const data = await DynastyAPI.api('getManagementData');
       const teams = data.times || [];
       const players = data.players || [];
+      const users = data.users || [];
 
       const teamRows = teams.length
         ? teams
@@ -49,6 +50,27 @@
             .join('')
         : '<option value="">Cadastre um time primeiro</option>';
 
+      // Build user link rows: for each user, find their linked team
+      const userLinkRows = users.length
+        ? users
+            .map((user) => {
+              const linkedTeam = teams.find(
+                (team) => String(team.email || '').toLowerCase() === String(user.email || '').toLowerCase()
+              );
+              return `
+              <tr>
+                <td>${UI.escapeHtml(user.email)}</td>
+                <td>${linkedTeam ? UI.escapeHtml(linkedTeam.nome) : '<span class="muted">Convidado</span>'}</td>
+                <td>${user.isAdmin ? '<span class="pill">Admin</span>' : ''}</td>
+                <td>
+                  <button class="btn btn-ghost" type="button" data-link-user="${UI.escapeHtml(user.email)}">Vincular</button>
+                  ${linkedTeam ? `<button class="btn btn-ghost" type="button" data-unlink-user="${UI.escapeHtml(user.email)}">Desvincular</button>` : ''}
+                </td>
+              </tr>`;
+            })
+            .join('')
+        : `<tr><td colspan="4">${UI.empty('Nenhum usuário cadastrado.')}</td></tr>`;
+
       view.innerHTML = `
         <h1 class="page-title">Gestão da liga</h1>
         <p class="page-sub">Cadastre times, associe e-mails de usuários e monte o elenco por time.</p>
@@ -88,6 +110,30 @@
               </div>
             </form>
           </section>
+
+          <section class="side-panel">
+            <h2>Vincular usuário a time</h2>
+            <form id="link-form" class="form-stack">
+              <label class="field">E-mail do usuário<input type="email" id="link-email" placeholder="usuario@gmail.com" required /></label>
+              <label class="field">Time<select id="link-team">
+                <option value="">— Convidado (desvincular) —</option>
+                ${teamOptions}
+              </select></label>
+              <div class="toolbar">
+                <button class="btn" type="submit">Vincular</button>
+              </div>
+            </form>
+          </section>
+        </div>
+
+        <h2>Vínculos de usuários</h2>
+        <div class="table-wrap">
+          <table class="data">
+            <thead>
+              <tr><th>E-mail</th><th>Time</th><th>Perfil</th><th></th></tr>
+            </thead>
+            <tbody>${userLinkRows}</tbody>
+          </table>
         </div>
 
         <h2>Times cadastrados</h2>
@@ -114,6 +160,7 @@
       const msg = view.querySelector('#mgmt-msg');
       const teamForm = view.querySelector('#team-form');
       const playerForm = view.querySelector('#player-form');
+      const linkForm = view.querySelector('#link-form');
 
       function showMessage(text, type) {
         msg.innerHTML = type === 'error' ? UI.error(text) : UI.success(text);
@@ -169,6 +216,20 @@
         }
       });
 
+      linkForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        showMessage('');
+        try {
+          const email = view.querySelector('#link-email').value.trim();
+          const timeId = view.querySelector('#link-team').value;
+          await DynastyAPI.api('linkUserToTeam', { email, timeId });
+          showMessage(timeId ? 'Usuário vinculado ao time.' : 'Usuário desvinculado (convidado).');
+          linkForm.reset();
+        } catch (e) {
+          showMessage(e.message || String(e), 'error');
+        }
+      });
+
       view.querySelectorAll('[data-edit-team]').forEach((button) => {
         button.addEventListener('click', async () => {
           const teamId = button.getAttribute('data-edit-team');
@@ -194,6 +255,33 @@
           view.querySelector('#player-ano').value = String(player.anoDraft || new Date().getFullYear());
           view.querySelector('#player-status').value = player.status || 'ativo';
           view.querySelector('#player-nome').focus();
+        });
+      });
+
+      view.querySelectorAll('[data-link-user]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const email = button.getAttribute('data-link-user');
+          const user = users.find((item) => String(item.email).toLowerCase() === String(email).toLowerCase());
+          if (!user) return;
+          const linkedTeam = teams.find(
+            (team) => String(team.email || '').toLowerCase() === String(user.email || '').toLowerCase()
+          );
+          view.querySelector('#link-email').value = user.email || '';
+          view.querySelector('#link-team').value = linkedTeam ? linkedTeam.id : '';
+          view.querySelector('#link-email').focus();
+        });
+      });
+
+      view.querySelectorAll('[data-unlink-user]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const email = button.getAttribute('data-unlink-user');
+          showMessage('');
+          try {
+            await DynastyAPI.api('linkUserToTeam', { email, timeId: '' });
+            showMessage('Usuário desvinculado (convidado).');
+          } catch (e) {
+            showMessage(e.message || String(e), 'error');
+          }
         });
       });
     } catch (e) {
