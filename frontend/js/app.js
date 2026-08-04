@@ -10,8 +10,7 @@
     history: (p) => window.Pages.history(p),
     alerts: (p) => window.Pages.alerts(p),
     standings: (p) => window.Pages.standings(p),
-    management: () => window.Pages.management(),
-    freeagents: (p) => window.Pages.freeagents(p)
+    management: () => window.Pages.management()
   };
 
   let currentUser = null;
@@ -102,12 +101,11 @@
         <button class="mobile-nav-toggle" type="button" id="nav-toggle" aria-label="Menu">Menu</button>
         <nav class="nav" id="main-nav">
           <a href="#/dashboard" data-route="dashboard">Dashboard</a>
-          <a href="#/alerts" data-route="alerts">Alertas</a>
+          <a href="#/alerts" data-route="alerts">Free Agents</a>
           <a href="#/trade" data-route="trade">Nova troca</a>
           <a href="#/keeps" data-route="keeps">Keeps</a>
           <a href="#/history" data-route="history">Histórico</a>
           <a href="#/standings" data-route="standings">Standings</a>
-          <a href="#/freeagents" data-route="freeagents">Free Agents</a>
           <a href="#/management" data-route="management">Gestão</a>
         </nav>
         <div class="user-info">

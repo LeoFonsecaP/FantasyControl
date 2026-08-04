@@ -74,9 +74,6 @@
       case 'getExpiring':
         result = await sb.rpc('rpc_get_expiring', { p_ano: payload.ano || null });
         break;
-      case 'getFreeAgents':
-        result = await sb.rpc('rpc_get_free_agents', { p_ano: payload.ano || null });
-        break;
       case 'getTrades':
         result = await sb.rpc('rpc_get_trades', { p_time_id: payload.timeId || null });
         break;

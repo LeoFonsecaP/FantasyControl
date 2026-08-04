@@ -23,8 +23,8 @@ window.Pages.alerts = async function (route) {
     .join('');
 
   view.innerHTML = `
-    <h1 class="page-title">Alertas de keeper</h1>
-    <p class="page-sub">Jogadores próximos do limite · temporada ${data.temporadaAtual}</p>
+    <h1 class="page-title">Free Agents</h1>
+    <p class="page-sub">Jogadores por ano de expiração · temporada ${data.temporadaAtual}</p>
     <div class="toolbar">
       <label class="field">Filtrar por ano de expiração
         <select id="ano-filter">

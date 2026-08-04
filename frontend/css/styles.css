@@ -594,54 +594,6 @@ table.data tr:hover td {
   cursor: not-allowed;
 }
 
-/* —— Year summary chips (Free Agent Tracker) —— */
-.year-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
-}
-
-.year-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.75rem;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--muted);
-  text-decoration: none;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
-}
-
-.year-chip:hover {
-  border-color: rgba(62, 207, 142, 0.45);
-  color: var(--ink);
-  text-decoration: none;
-}
-
-.year-chip.active {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-  color: var(--accent);
-}
-
-.year-chip .count {
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 0.1rem 0.4rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--ink);
-}
-
-.year-chip.active .count {
-  background: var(--accent);
-  color: #062016;
-}
-
 /* —— States —— */
 .muted {
   color: var(--muted);

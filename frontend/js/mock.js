@@ -229,14 +229,6 @@
           .map(enrich);
         return { temporadaAtual: TEMPORADA, filtroAno: ano, jogadores: list };
       }
-      case 'getFreeAgents': {
-        const ano = payload.ano ? parseInt(payload.ano, 10) : null;
-        const all = players.filter((pl) => pl.status !== 'dispensado');
-        const list = all.filter((pl) => (ano ? pl.limite === ano : true)).map(enrich);
-        const anos = [...new Set(all.map((pl) => pl.limite))].sort((a, b) => a - b);
-        const resumo = anos.map((y) => ({ ano: y, total: all.filter((pl) => pl.limite === y).length }));
-        return { temporadaAtual: TEMPORADA, filtroAno: ano, anos, resumo, jogadores: list };
-      }
       case 'getTrades': {
         let list = trades.slice().reverse();
         if (payload.timeId) {
