@@ -7,11 +7,11 @@
     team: (p) => window.Pages.team(p),
     trade: () => window.Pages.trade(),
     keeps: () => window.Pages.keeps(),
-    history: () => window.Pages.history(),
-    alerts: () => window.Pages.alerts(),
-    standings: () => window.Pages.standings(),
+    history: (p) => window.Pages.history(p),
+    alerts: (p) => window.Pages.alerts(p),
+    standings: (p) => window.Pages.standings(p),
     management: () => window.Pages.management(),
-    freeagents: () => window.Pages.freeagents()
+    freeagents: (p) => window.Pages.freeagents(p)
   };
 
   let currentUser = null;
