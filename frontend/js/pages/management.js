@@ -223,14 +223,14 @@
           const email = view.querySelector('#link-email').value.trim();
           const timeId = view.querySelector('#link-team').value;
           await DynastyAPI.api('linkUserToTeam', { email, timeId });
-          showMessage(timeId ? 'Usuário vinculado ao time.' : 'Usuário desvinculado (convidado).');
+          const team = teams.find((t) => t.id === timeId);
+          const message = timeId
+            ? `Usuário ${email} vinculado a ${team ? team.nome : timeId}. Atualizando...`
+            : `Usuário ${email} desvinculado (convidado). Atualizando...`;
+          showMessage(message);
           linkForm.reset();
-          if (window.App && typeof window.App.refreshUser === 'function') {
-            const me = await window.App.refreshUser();
-            if (me && String(me.email || '').toLowerCase() === String(email || '').toLowerCase()) {
-              showMessage(timeId ? `Vínculo atualizado: ${me.teamName || 'Convidado'}.` : 'Usuário desvinculado (convidado).');
-            }
-          }
+          await new Promise((r) => setTimeout(r, 600));
+          location.reload();
         } catch (e) {
           showMessage(e.message || String(e), 'error');
         }
@@ -284,10 +284,9 @@
           showMessage('');
           try {
             await DynastyAPI.api('linkUserToTeam', { email, timeId: '' });
-            showMessage('Usuário desvinculado (convidado).');
-            if (window.App && typeof window.App.refreshUser === 'function') {
-              await window.App.refreshUser();
-            }
+            showMessage(`Usuário ${email} desvinculado (convidado). Atualizando...`);
+            await new Promise((r) => setTimeout(r, 600));
+            location.reload();
           } catch (e) {
             showMessage(e.message || String(e), 'error');
           }

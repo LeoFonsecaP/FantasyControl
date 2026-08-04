@@ -53,6 +53,7 @@ $$;
 
 -- =========================================
 -- 2. Nova função: vincula/desvincula usuário a um time
+--    Também atualiza user_id para um vínculo robusto
 -- =========================================
 create or replace function public.rpc_link_user_to_team(
   p_email text,
@@ -66,6 +67,7 @@ as $$
 declare
   v_email text := lower(trim(p_email));
   v_time_id text := p_time_id;
+  v_user_id uuid;
 begin
   if not public.is_admin() then
     raise exception 'Ação restrita a administradores.';
@@ -75,9 +77,12 @@ begin
     raise exception 'Informe o e-mail do usuário.';
   end if;
 
-  -- Se time_id vazio, desvincula (limpa email do time)
+  -- Busca o user_id correspondente ao email em auth.users
+  select id into v_user_id from auth.users where lower(email) = v_email limit 1;
+
+  -- Se time_id vazio, desvincula (limpa email e user_id do time)
   if v_time_id is null or v_time_id = '' then
-    update times set email = null where lower(email) = v_email;
+    update times set email = null, user_id = null where lower(email) = v_email or user_id = v_user_id;
     return jsonb_build_object(
       'ok', true,
       'message', 'Usuário desvinculado.',
@@ -89,11 +94,12 @@ begin
     raise exception 'Time inválido.';
   end if;
 
-  -- Remove o email de outros times (evita duplicidade)
-  update times set email = null where lower(email) = v_email and id != v_time_id;
+  -- Remove o vínculo de outros times (evita duplicidade)
+  update times set email = null, user_id = null
+  where (lower(email) = v_email or user_id = v_user_id) and id != v_time_id;
 
-  -- Vincula o email ao time
-  update times set email = v_email where id = v_time_id;
+  -- Vincula o email e user_id ao time
+  update times set email = v_email, user_id = v_user_id where id = v_time_id;
 
   return jsonb_build_object(
     'ok', true,
@@ -106,7 +112,7 @@ $$;
 
 -- =========================================
 -- 3. Corrige rpc_me para tratar usuário sem time vinculado (convidado)
---    Usa variáveis escalares para evitar ambiguidade com record no PL/pgSQL
+--    Usa variáveis escalares e verifica por user_id E email (robusto)
 -- =========================================
 create or replace function public.rpc_me()
 returns jsonb
@@ -120,17 +126,19 @@ declare
   v_team_name text;
   v_is_admin boolean;
   v_temporada int;
+  v_uid uuid := auth.uid();
 begin
-  select email into v_email from auth.users where id = auth.uid();
+  select email into v_email from auth.users where id = v_uid;
   if v_email is null then
     raise exception 'Faça login com sua conta.';
   end if;
 
-  select is_admin into v_is_admin from profiles where id = auth.uid();
+  select is_admin into v_is_admin from profiles where id = v_uid;
 
   select t.id, t.nome_time into v_team_id, v_team_name
   from times t
-  where lower(t.email) = lower(v_email)
+  where t.user_id = v_uid
+     or lower(trim(coalesce(t.email, ''))) = lower(trim(v_email))
   limit 1;
 
   v_temporada := public.get_temporada_atual();
