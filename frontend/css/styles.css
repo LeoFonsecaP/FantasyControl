@@ -155,25 +155,32 @@ main {
 .login-box {
   width: min(420px, 100%);
   text-align: center;
-  padding: 2.5rem 2rem;
+  padding: 2rem;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: rgba(0, 0, 0, 0.25);
   box-shadow: var(--shadow);
 }
 
-.login-box h1 {
-  font-family: var(--display);
-  font-size: clamp(2rem, 6vw, 2.8rem);
-  font-weight: 400;
-  margin: 0 0 0.5rem;
+.login-box .error-banner,
+.login-box .success-banner {
+  text-align: left;
 }
 
-.login-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-top: 1.5rem;
+.btn-google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  background: #fff;
+  color: #1f2937;
+  border-color: transparent;
+}
+
+.btn-google:hover {
+  background: #f3f4f6;
+  filter: none;
 }
 
 .login-divider {
@@ -184,6 +191,7 @@ main {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  margin: 1.25rem 0;
 }
 
 .login-divider::before,
@@ -192,6 +200,24 @@ main {
   flex: 1;
   height: 1px;
   background: var(--line);
+}
+
+.login-magic {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  text-align: left;
+}
+
+.login-magic input {
+  width: 100%;
+}
+
+.login-hint {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  margin: 0.9rem 0 0;
 }
 
 .user-info {
