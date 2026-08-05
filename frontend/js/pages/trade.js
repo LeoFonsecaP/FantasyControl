@@ -87,8 +87,8 @@ window.Pages.trade = async function () {
                         <input type="checkbox" value="${UI.escapeHtml(p.id)}" ${
                           side.jogadores.has(p.id) ? 'checked' : ''
                         }/>
-                        ${UI.escapeHtml(p.jogador)} <span class="muted">(${p.round}ª/${p.anoDraft})</span>
-                        ${isMultiTeam ? `<select data-item="${p.id}" class="receiver-select" style="margin-left:0.5rem">${receiverOptions.replace(`value="${receiver}"`, `value="${receiver}" selected`).replace('value=""', `value="${receiver}" selected`)}</select>` : ''}
+                        <span class="player-info">${UI.escapeHtml(p.jogador)} <span class="muted">(${p.round}ª/${p.anoDraft})</span></span>
+                        ${isMultiTeam ? `<select data-item="${p.id}" class="receiver-select">${receiverOptions.replace(`value="${receiver}"`, `value="${receiver}" selected`).replace('value=""', `value="${receiver}" selected`)}</select>` : ''}
                       </label>`;
                     }
                   )
@@ -108,10 +108,10 @@ window.Pages.trade = async function () {
                         <input type="checkbox" value="${UI.escapeHtml(pk.id)}" ${
                           side.picks.has(pk.id) ? 'checked' : ''
                         }/>
-                        ${pk.rodada}ª ${pk.ano} ${
+                        <span class="player-info">${pk.rodada}ª ${pk.ano} ${
                           pk.original ? '' : '<span class="pill traded">recebido</span>'
-                        } <span class="muted">(${UI.escapeHtml(pk.timeOriginalNome || pk.timeOriginal)})</span>
-                        ${isMultiTeam ? `<select data-item="${pk.id}" class="receiver-select" style="margin-left:0.5rem">${receiverOptions.replace(`value="${receiver}"`, `value="${receiver}" selected`).replace('value=""', `value="${receiver}" selected`)}</select>` : ''}
+                        } <span class="muted">(orig: ${UI.escapeHtml(pk.timeOriginalNome || pk.timeOriginal)})</span></span>
+                        ${isMultiTeam ? `<select data-item="${pk.id}" class="receiver-select">${receiverOptions.replace(`value="${receiver}"`, `value="${receiver}" selected`).replace('value=""', `value="${receiver}" selected`)}</select>` : ''}
                       </label>`;
                     }
                   )
