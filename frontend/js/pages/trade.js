@@ -254,6 +254,22 @@ window.Pages.trade = async function () {
     msg.innerHTML = '';
     
     const isMultiTeam = state.sides.length > 2;
+    
+    // Para trocas de 2 times, preencher automaticamente os receivers faltantes
+    if (!isMultiTeam) {
+      state.sides.forEach((s, index) => {
+        const otherTeam = getOtherTeamInTwoWayTrade(index);
+        if (otherTeam) {
+          s.jogadores.forEach((receiver, id) => {
+            if (!receiver) s.jogadores.set(id, otherTeam);
+          });
+          s.picks.forEach((receiver, id) => {
+            if (!receiver) s.picks.set(id, otherTeam);
+          });
+        }
+      });
+    }
+    
     const lados = state.sides.map((s, index) => {
       const envia = {
         jogadores: [...s.jogadores.entries()].map(([id, receiver]) => ({
@@ -296,21 +312,7 @@ window.Pages.trade = async function () {
         msg.innerHTML = UI.error('Um time não pode enviar itens para si mesmo.');
         return;
       }
-    } else {
-      // Para trocas de 2 times, preencher automaticamente os receivers faltantes
-      lados.forEach((l, index) => {
-        const otherTeam = getOtherTeamInTwoWayTrade(index);
-        if (otherTeam) {
-          l.envia.jogadores.forEach((j) => {
-            if (!j.receiver) j.receiver = otherTeam;
-          });
-          l.envia.picks.forEach((p) => {
-            if (!p.receiver) p.receiver = otherTeam;
-          });
-        }
-      });
     }
-    
     const hasItems = lados.some(
       (l) => l.envia.jogadores.length + l.envia.picks.length > 0
     );
