@@ -691,6 +691,69 @@ table.data tr:hover td {
   font-size: 1.35rem;
 }
 
+/* —— Trade History —— */
+.trade-item {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(62, 207, 142, 0.05);
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.trade-header {
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.trade-header:hover {
+  background: rgba(62, 207, 142, 0.08);
+}
+
+.trade-toggle {
+  display: inline-block;
+  transition: transform 0.2s ease;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.trade-item.expanded .trade-toggle {
+  transform: rotate(180deg);
+}
+
+.trade-details {
+  padding: 0 1rem 1rem 1rem;
+  border-top: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.15);
+  animation: slideDown 0.25s ease;
+}
+
+.trade-details ul {
+  margin: 0.5rem 0 0 0;
+  padding-left: 1.25rem;
+}
+
+.trade-details li {
+  margin-bottom: 0.35rem;
+  line-height: 1.5;
+}
+
+.trade-details li:last-child {
+  margin-bottom: 0;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
 .mobile-nav-toggle {
   display: none;
   background: transparent;
