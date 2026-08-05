@@ -257,14 +257,17 @@ window.Pages.trade = async function () {
         return;
       }
       
-      const receivers = new Set();
+      const invalidReceivers = [];
       lados.forEach((l) => {
-        l.envia.jogadores.forEach((j) => { if (j.receiver) receivers.add(j.receiver); });
-        l.envia.picks.forEach((p) => { if (p.receiver) receivers.add(p.receiver); });
+        const senderId = l.timeId;
+        l.envia.jogadores.forEach((j) => { 
+          if (j.receiver === senderId) invalidReceivers.push(j.receiver); 
+        });
+        l.envia.picks.forEach((p) => { 
+          if (p.receiver === senderId) invalidReceivers.push(p.receiver); 
+        });
       });
       
-      const senderIds = new Set(lados.map((l) => l.timeId));
-      const invalidReceivers = [...receivers].filter((r) => senderIds.has(r));
       if (invalidReceivers.length > 0) {
         msg.innerHTML = UI.error('Um time não pode enviar itens para si mesmo.');
         return;
