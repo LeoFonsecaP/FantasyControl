@@ -724,24 +724,23 @@ table.data tr:hover td {
 
 .trade-details {
   display: none;
-  padding: 0 1rem 1rem 1rem;
+  padding: 1rem 1.25rem 1.25rem 1.25rem;
   border-top: 1px solid var(--line);
   background: rgba(0, 0, 0, 0.15);
 }
 
 .trade-item.expanded .trade-details {
   display: block;
-  animation: slideDown 0.25s ease;
 }
 
 .trade-details ul {
-  margin: 0.5rem 0 0 0;
-  padding-left: 1.25rem;
+  margin: 0.75rem 0 0 0;
+  padding-left: 1.5rem;
 }
 
 .trade-details li {
-  margin-bottom: 0.35rem;
-  line-height: 1.5;
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
 }
 
 .trade-details li:last-child {

@@ -70,12 +70,11 @@ window.Pages.history = async function (route) {
           <div class="trade-header" onclick="this.parentElement.classList.toggle('expanded')">
             <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:center">
               <div>
-                <strong>${UI.escapeHtml(t.id)}</strong>
+                <strong style="font-size:1rem;">${timesEnvolvidos}</strong>
                 <span class="muted" style="margin-left: 0.75rem;font-size:0.85rem">${UI.escapeHtml(String(t.data).slice(0, 19).replace('T', ' '))}</span>
               </div>
               <span class="trade-toggle">▼</span>
             </div>
-            <div class="muted" style="font-size:0.85rem;margin-top:0.35rem">${timesEnvolvidos}</div>
           </div>
           <div class="trade-details">
             ${expandedContent || '<div class="muted">Detalhes não disponíveis</div>'}
