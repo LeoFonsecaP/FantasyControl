@@ -35,8 +35,11 @@ window.Pages.trade = async function () {
   }
 
   function getReceiverOptions(sideIndex) {
+    const senderId = state.sides[sideIndex].timeId;
+    const involvedTeamIds = new Set(state.sides.map((s) => s.timeId).filter(Boolean));
+    
     return teams
-      .filter((t) => !state.sides.some((s, idx) => idx === sideIndex && s.timeId === t.id))
+      .filter((t) => t.id !== senderId && involvedTeamIds.has(t.id))
       .map(
         (t) =>
           `<option value="${UI.escapeHtml(t.id)}">${UI.escapeHtml(t.nome)}</option>`
@@ -49,7 +52,7 @@ window.Pages.trade = async function () {
     return `
       <option value="">Selecione um time...</option>
       ${teams
-        .filter((t) => !used.has(t.id))
+        .filter((t) => !used.has(t.id) || t.id === selected)
         .map(
           (t) =>
             `<option value="${UI.escapeHtml(t.id)}" ${t.id === selected ? 'selected' : ''}>${UI.escapeHtml(t.nome)}</option>`
