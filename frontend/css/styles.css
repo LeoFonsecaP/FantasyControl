@@ -724,7 +724,7 @@ table.data tr:hover td {
 
 .trade-details {
   display: none;
-  padding: 1rem 1.25rem 1.25rem 1.25rem;
+  padding: 1.25rem 1.5rem 1.5rem 1.5rem;
   border-top: 1px solid var(--line);
   background: rgba(0, 0, 0, 0.15);
 }
@@ -734,13 +734,13 @@ table.data tr:hover td {
 }
 
 .trade-details ul {
-  margin: 0.75rem 0 0 0;
-  padding-left: 1.5rem;
+  margin: 1rem 0 0 0;
+  padding-left: 1.75rem;
 }
 
 .trade-details li {
-  margin-bottom: 0.5rem;
-  line-height: 1.6;
+  margin-bottom: 0.6rem;
+  line-height: 1.7;
 }
 
 .trade-details li:last-child {
