@@ -152,7 +152,19 @@ window.Pages.trade = async function () {
         const itemId = e.target.value;
         
         if (e.target.checked) {
-          state.sides[i][kind].set(itemId, '');
+          // Auto-select primeiro receiver disponível
+          const receiverSelect = list.querySelector(`select[data-item="${itemId}"]`);
+          if (receiverSelect && !receiverSelect.value) {
+            const firstOption = receiverSelect.querySelector('option[value]:not([value=""])');
+            if (firstOption) {
+              receiverSelect.value = firstOption.value;
+              state.sides[i][kind].set(itemId, firstOption.value);
+            } else {
+              state.sides[i][kind].set(itemId, '');
+            }
+          } else {
+            state.sides[i][kind].set(itemId, receiverSelect ? receiverSelect.value : '');
+          }
         } else {
           state.sides[i][kind].delete(itemId);
         }
