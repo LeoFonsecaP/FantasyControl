@@ -35,6 +35,7 @@ window.Pages.team = async function (route) {
           </span>
         </td>
         <td>${UI.escapeHtml(pk.timeOriginalNome)}</td>
+        <td>${UI.escapeHtml(pk.timeDonoAtualNome || pk.timeDonoAtual)}</td>
       </tr>`
     )
     .join('');
@@ -56,10 +57,10 @@ window.Pages.team = async function (route) {
     <h2>Picks futuros</h2>
     ${
       data.picks.length
-        ? `<div class="table-wrap"><table class="data">
-            <thead><tr><th>Pick</th><th>Origem</th><th>Time original</th></tr></thead>
-            <tbody>${picksRows}</tbody>
-          </table></div>`
+      ? `<div class="table-wrap"><table class="data">
+          <thead><tr><th>Pick</th><th>Origem</th><th>Time original</th><th>Dono atual</th></tr></thead>
+          <tbody>${picksRows}</tbody>
+        </table></div>`
         : UI.empty('Nenhum pick futuro.')
     }
   `;

@@ -216,6 +216,8 @@
               ano: pk.ano,
               timeOriginal: pk.timeOriginal,
               timeOriginalNome: teamName(pk.timeOriginal),
+              timeDonoAtual: pk.timeDonoAtual,
+              timeDonoAtualNome: teamName(pk.timeDonoAtual),
               original: pk.timeOriginal === timeId,
               usado: pk.usado
             }))

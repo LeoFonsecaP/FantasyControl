@@ -270,6 +270,8 @@ begin
         'ano', pk.ano,
         'timeOriginal', pk.time_original,
         'timeOriginalNome', (select nome_time from times where id = pk.time_original),
+        'timeDonoAtual', pk.time_dono_atual,
+        'timeDonoAtualNome', (select nome_time from times where id = pk.time_dono_atual),
         'original', pk.time_original = p_time_id,
         'usado', pk.usado
       ) order by pk.ano, pk.rodada)

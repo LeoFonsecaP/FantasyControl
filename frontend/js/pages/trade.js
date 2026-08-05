@@ -21,8 +21,7 @@ window.Pages.trade = async function () {
   const sidesEl = view.querySelector('#sides');
   const state = {
     sides: [
-      { timeId: teams[0] ? teams[0].id : '', jogadores: new Set(), picks: new Set() },
-      { timeId: teams[1] ? teams[1].id : '', jogadores: new Set(), picks: new Set() }
+      { timeId: '', jogadores: new Set(), picks: new Set() }
     ],
     cache: {}
   };
@@ -80,7 +79,7 @@ window.Pages.trade = async function () {
                       side.picks.has(pk.id) ? 'checked' : ''
                     }/> ${pk.rodada}ª ${pk.ano} ${
                       pk.original ? '' : '<span class="pill traded">recebido</span>'
-                    }</label>`
+                    } <span class="muted">(${UI.escapeHtml(pk.timeDonoAtualNome || pk.timeDonoAtual)})</span></label>`
                   )
                   .join('')
               : '<span class="muted">Sem picks</span>'
