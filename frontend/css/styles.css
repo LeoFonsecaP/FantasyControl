@@ -821,4 +821,47 @@ table.data tr:hover td {
     width: 100%;
     text-align: left;
   }
+
+  /* Trade page mobile fixes */
+  .check-list label {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .check-list .player-info {
+    min-width: unset;
+    width: 100%;
+    font-size: 0.85rem;
+  }
+
+  .check-list .receiver-select {
+    margin-left: 0;
+    width: 100%;
+    min-width: unset;
+    max-width: unset;
+    font-size: 0.85rem;
+    padding: 0.45rem 0.6rem;
+  }
+
+  .check-list input[type='checkbox'] {
+    margin-top: 0;
+  }
+
+  .side-panel {
+    padding: 0.85rem;
+  }
+
+  .side-panel h3 {
+    font-size: 0.95rem;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar .btn {
+    width: 100%;
+  }
 }
