@@ -673,7 +673,7 @@ table.data tr:hover td {
 
 .hof-list {
   display: grid;
-  gap: 0.65rem;
+  gap: 1rem;
 }
 
 .hof-item {
@@ -701,7 +701,7 @@ table.data tr:hover td {
 }
 
 .trade-header {
-  padding: 0.85rem 1rem;
+  padding: 1.15rem 1.25rem;
   cursor: pointer;
   user-select: none;
   transition: background 0.2s ease;
