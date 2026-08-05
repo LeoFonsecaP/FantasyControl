@@ -291,6 +291,8 @@ end;
 $$;
 
 -- getExpiring: jogadores próximos do limite
+-- Quando p_ano é null (próxima temporada), inclui dispensados
+-- Quando p_ano é específico, inclui apenas ativos (não dispensados)
 create or replace function public.rpc_get_expiring(p_ano int default null)
 returns jsonb
 language plpgsql
@@ -326,11 +328,11 @@ begin
   ) into v_result
   from jogadores j
   join times t on t.id = j.time_id
-  where j.status != 'dispensado'
-    and (
-      (p_ano is not null and j.limite = p_ano)
-      or (p_ano is null and (j.limite = v_temporada or j.limite = v_temporada + 1))
-    );
+  where 
+    -- Próxima temporada (p_ano is null): inclui todos (ativos + dispensados)
+    (p_ano is null and (j.limite = v_temporada or j.limite = v_temporada + 1))
+    -- Ano específico: apenas ativos (não dispensados)
+    or (p_ano is not null and j.status != 'dispensado' and j.limite = p_ano);
 
   return v_result;
 end;

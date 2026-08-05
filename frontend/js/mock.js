@@ -225,11 +225,17 @@
       }
       case 'getExpiring': {
         const ano = payload.ano ? parseInt(payload.ano, 10) : null;
-        const list = players
-          .filter((pl) => pl.status !== 'dispensado')
-          .filter((pl) => (ano ? pl.limite === ano : pl.limite === TEMPORADA || pl.limite === TEMPORADA + 1))
-          .map(enrich);
-        return { temporadaAtual: TEMPORADA, filtroAno: ano, jogadores: list };
+        let list = players;
+        
+        if (ano) {
+          // Ano específico: apenas jogadores ativos (não dispensados)
+          list = list.filter((pl) => pl.status !== 'dispensado' && pl.limite === ano);
+        } else {
+          // Próxima temporada (ano null): inclui todos (ativos + dispensados) com limite = TEMPORADA ou TEMPORADA + 1
+          list = list.filter((pl) => pl.limite === TEMPORADA || pl.limite === TEMPORADA + 1);
+        }
+        
+        return { temporadaAtual: TEMPORADA, filtroAno: ano, jogadores: list.map(enrich) };
       }
       case 'getTrades': {
         let list = trades.slice().reverse();

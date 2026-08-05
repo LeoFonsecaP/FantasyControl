@@ -11,6 +11,9 @@ declare
   v_temporada int := public.get_temporada_atual();
   v_result jsonb;
 begin
+  -- Define filtro de status: inclui dispensados apenas para próxima temporada (p_ano is null)
+  -- Para anos específicos, mantém apenas ativos (não dispensados)
+  -- Para próxima temporada (p_ano is null), inclui todos (ativos + dispensados)
   select jsonb_build_object(
     'temporadaAtual', v_temporada,
     'filtroAno', p_ano,
@@ -50,8 +53,9 @@ begin
   ) into v_result
   from jogadores j
   join times t on t.id = j.time_id
-  where j.status != 'dispensado'
-    and (p_ano is null or j.limite = p_ano);
+  where (p_ano is null and j.status = 'dispensado') -- Próxima temporada: inclui dispensados
+     or (p_ano is not null and j.status != 'dispensado' and j.limite = p_ano) -- Ano específico: apenas ativos
+     or (p_ano is null and j.status != 'dispensado'); -- Próxima temporada: inclui ativos
 
   return v_result;
 end;

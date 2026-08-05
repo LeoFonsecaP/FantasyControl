@@ -7,7 +7,7 @@ window.Pages.alerts = async function (route) {
   const data = await DynastyAPI.api('getExpiring', payload);
 
   const years = [];
-  for (let y = data.temporadaAtual; y <= data.temporadaAtual + 6; y++) years.push(y);
+  for (let y = data.temporadaAtual + 2; y <= data.temporadaAtual + 6; y++) years.push(y);
 
   const rows = data.jogadores
     .map(
