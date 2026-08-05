@@ -134,6 +134,14 @@ window.Pages.trade = async function () {
     updatePreview();
   }
 
+  function getOtherTeamInTwoWayTrade(sideIndex) {
+    // Para trocas de 2 times, retorna o outro time envolvido
+    if (state.sides.length !== 2) return null;
+    const currentTeamId = state.sides[sideIndex].timeId;
+    const otherSide = state.sides.find((s, idx) => idx !== sideIndex && s.timeId);
+    return otherSide ? otherSide.timeId : null;
+  }
+
   function bindSideEvents() {
     sidesEl.querySelectorAll('.side-team').forEach((sel) => {
       sel.addEventListener('change', async (e) => {
@@ -162,8 +170,12 @@ window.Pages.trade = async function () {
             } else {
               state.sides[i][kind].set(itemId, '');
             }
+          } else if (!receiverSelect) {
+            // Troca de 2 times: auto-selecionar o outro time
+            const otherTeam = getOtherTeamInTwoWayTrade(i);
+            state.sides[i][kind].set(itemId, otherTeam || '');
           } else {
-            state.sides[i][kind].set(itemId, receiverSelect ? receiverSelect.value : '');
+            state.sides[i][kind].set(itemId, receiverSelect.value);
           }
         } else {
           state.sides[i][kind].delete(itemId);
@@ -242,7 +254,7 @@ window.Pages.trade = async function () {
     msg.innerHTML = '';
     
     const isMultiTeam = state.sides.length > 2;
-    const lados = state.sides.map((s) => {
+    const lados = state.sides.map((s, index) => {
       const envia = {
         jogadores: [...s.jogadores.entries()].map(([id, receiver]) => ({
           id,
@@ -284,6 +296,19 @@ window.Pages.trade = async function () {
         msg.innerHTML = UI.error('Um time não pode enviar itens para si mesmo.');
         return;
       }
+    } else {
+      // Para trocas de 2 times, preencher automaticamente os receivers faltantes
+      lados.forEach((l, index) => {
+        const otherTeam = getOtherTeamInTwoWayTrade(index);
+        if (otherTeam) {
+          l.envia.jogadores.forEach((j) => {
+            if (!j.receiver) j.receiver = otherTeam;
+          });
+          l.envia.picks.forEach((p) => {
+            if (!p.receiver) p.receiver = otherTeam;
+          });
+        }
+      });
     }
     
     const hasItems = lados.some(
