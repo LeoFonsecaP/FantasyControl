@@ -60,7 +60,9 @@ create table standings (
   time_id text references times(id) on delete set null,
   vitorias int default 0,
   derrotas int default 0,
+  empates int default 0,
   posicao_final int,
+  pontos numeric,
   campeao boolean default false,
   unique (ano, time_id)
 );
