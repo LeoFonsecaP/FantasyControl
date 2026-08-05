@@ -521,6 +521,30 @@ table.data tr:hover td {
   max-height: 260px;
   overflow-y: auto;
   margin: 0.5rem 0 1rem;
+  padding-right: 0.5rem;
+}
+
+.check-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.check-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 3px;
+}
+
+.check-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+.check-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.check-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) rgba(255, 255, 255, 0.03);
 }
 
 .check-list label {
