@@ -240,28 +240,64 @@
       }
       case 'createTrade': {
         const lados = payload.lados || [];
-        if (lados.length === 2) {
-          const [a, b] = lados;
-          (a.envia.jogadores || []).forEach((id) => {
+        
+        lados.forEach((lado) => {
+          const receiverMap = new Map();
+          
+          (lado.envia.jogadores || []).forEach((item) => {
+            const id = typeof item === 'object' ? item.id : item;
+            const receiver = typeof item === 'object' ? item.receiver : null;
             const pl = players.find((x) => x.id === id);
-            if (pl) pl.timeId = b.timeId;
+            if (pl && receiver) {
+              pl.timeId = receiver;
+            } else if (pl && !receiver) {
+              const nextSide = lados[(lados.findIndex((l) => l.timeId === lado.timeId) + 1) % lados.length];
+              if (nextSide) pl.timeId = nextSide.timeId;
+            }
           });
-          (a.envia.picks || []).forEach((id) => {
+          
+          (lado.envia.picks || []).forEach((item) => {
+            const id = typeof item === 'object' ? item.id : item;
+            const receiver = typeof item === 'object' ? item.receiver : null;
             const pk = picks.find((x) => x.id === id);
-            if (pk) pk.timeDonoAtual = b.timeId;
+            if (pk && receiver) {
+              pk.timeDonoAtual = receiver;
+            } else if (pk && !receiver) {
+              const nextSide = lados[(lados.findIndex((l) => l.timeId === lado.timeId) + 1) % lados.length];
+              if (nextSide) pk.timeDonoAtual = nextSide.timeId;
+            }
           });
-          (b.envia.jogadores || []).forEach((id) => {
-            const pl = players.find((x) => x.id === id);
-            if (pl) pl.timeId = a.timeId;
-          });
-          (b.envia.picks || []).forEach((id) => {
-            const pk = picks.find((x) => x.id === id);
-            if (pk) pk.timeDonoAtual = a.timeId;
-          });
-        }
+        });
+        
         const descricao = lados
-          .map((l) => teamName(l.timeId) + ' envia itens')
+          .map((l) => {
+            const items = [];
+            (l.envia.jogadores || []).forEach((item) => {
+              const id = typeof item === 'object' ? item.id : item;
+              const receiver = typeof item === 'object' ? item.receiver : null;
+              const pl = players.find((x) => x.id === id);
+              const name = pl ? pl.jogador : id;
+              if (receiver) {
+                items.push(name + ' → ' + teamName(receiver));
+              } else {
+                items.push(name);
+              }
+            });
+            (l.envia.picks || []).forEach((item) => {
+              const id = typeof item === 'object' ? item.id : item;
+              const receiver = typeof item === 'object' ? item.receiver : null;
+              const pk = picks.find((x) => x.id === id);
+              const pickDesc = pk ? pk.rodada + 'ª ' + pk.ano : id;
+              if (receiver) {
+                items.push(pickDesc + ' → ' + teamName(receiver));
+              } else {
+                items.push(pickDesc);
+              }
+            });
+            return teamName(l.timeId) + ' envia: ' + (items.length ? items.join(', ') : '(nada)');
+          })
           .join(' | ');
+        
         const trade = {
           id: 'X' + String(trades.length + 1).padStart(3, '0'),
           data: new Date().toISOString(),

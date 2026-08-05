@@ -21,7 +21,7 @@ window.Pages.trade = async function () {
   const sidesEl = view.querySelector('#sides');
   const state = {
     sides: [
-      { timeId: '', jogadores: new Set(), picks: new Set() }
+      { timeId: '', jogadores: new Map(), picks: new Map() }
     ],
     cache: {}
   };
@@ -32,6 +32,16 @@ window.Pages.trade = async function () {
     const data = await DynastyAPI.api('getTeam', { timeId });
     state.cache[timeId] = { jogadores: data.jogadores, picks: data.picks, nome: data.time.nome };
     return state.cache[timeId];
+  }
+
+  function getReceiverOptions(sideIndex) {
+    return teams
+      .filter((t) => !state.sides.some((s, idx) => idx === sideIndex && s.timeId === t.id))
+      .map(
+        (t) =>
+          `<option value="${UI.escapeHtml(t.id)}">${UI.escapeHtml(t.nome)}</option>`
+      )
+      .join('');
   }
 
   function teamOptions(selected) {
@@ -45,11 +55,16 @@ window.Pages.trade = async function () {
 
   async function renderSides() {
     sidesEl.innerHTML = '';
+    const isMultiTeam = state.sides.length > 2;
+    
     for (let i = 0; i < state.sides.length; i++) {
       const side = state.sides[i];
       const assets = await loadTeamAssets(side.timeId);
       const panel = document.createElement('div');
       panel.className = 'side-panel';
+      
+      const receiverOptions = isMultiTeam ? getReceiverOptions(i) : '';
+      
       panel.innerHTML = `
         <h3>Lado ${i + 1}</h3>
         <label class="field">Time
@@ -61,9 +76,16 @@ window.Pages.trade = async function () {
             assets.jogadores.length
               ? assets.jogadores
                   .map(
-                    (p) => `<label><input type="checkbox" value="${UI.escapeHtml(p.id)}" ${
-                      side.jogadores.has(p.id) ? 'checked' : ''
-                    }/> ${UI.escapeHtml(p.jogador)} <span class="muted">(${p.round}ª/${p.anoDraft})</span></label>`
+                    (p) => {
+                      const receiver = side.jogadores.get(p.id) || '';
+                      return `<label>
+                        <input type="checkbox" value="${UI.escapeHtml(p.id)}" ${
+                          side.jogadores.has(p.id) ? 'checked' : ''
+                        }/>
+                        ${UI.escapeHtml(p.jogador)} <span class="muted">(${p.round}ª/${p.anoDraft})</span>
+                        ${isMultiTeam ? `<select data-item="${p.id}" class="receiver-select" style="margin-left:0.5rem">${receiverOptions.replace(`value="${receiver}"`, `value="${receiver}" selected`).replace('value=""', `value="${receiver}" selected`)}</select>` : ''}
+                      </label>`;
+                    }
                   )
                   .join('')
               : '<span class="muted">Sem jogadores</span>'
@@ -75,11 +97,18 @@ window.Pages.trade = async function () {
             assets.picks.length
               ? assets.picks
                   .map(
-                    (pk) => `<label><input type="checkbox" value="${UI.escapeHtml(pk.id)}" ${
-                      side.picks.has(pk.id) ? 'checked' : ''
-                    }/> ${pk.rodada}ª ${pk.ano} ${
-                      pk.original ? '' : '<span class="pill traded">recebido</span>'
-                    } <span class="muted">(${UI.escapeHtml(pk.timeDonoAtualNome || pk.timeDonoAtual)})</span></label>`
+                    (pk) => {
+                      const receiver = side.picks.get(pk.id) || '';
+                      return `<label>
+                        <input type="checkbox" value="${UI.escapeHtml(pk.id)}" ${
+                          side.picks.has(pk.id) ? 'checked' : ''
+                        }/>
+                        ${pk.rodada}ª ${pk.ano} ${
+                          pk.original ? '' : '<span class="pill traded">recebido</span>'
+                        } <span class="muted">(${UI.escapeHtml(pk.timeOriginalNome || pk.timeOriginal)})</span>
+                        ${isMultiTeam ? `<select data-item="${pk.id}" class="receiver-select" style="margin-left:0.5rem">${receiverOptions.replace(`value="${receiver}"`, `value="${receiver}" selected`).replace('value=""', `value="${receiver}" selected`)}</select>` : ''}
+                      </label>`;
+                    }
                   )
                   .join('')
               : '<span class="muted">Sem picks</span>'
@@ -102,8 +131,8 @@ window.Pages.trade = async function () {
       sel.addEventListener('change', async (e) => {
         const i = parseInt(e.target.dataset.side, 10);
         state.sides[i].timeId = e.target.value;
-        state.sides[i].jogadores = new Set();
-        state.sides[i].picks = new Set();
+        state.sides[i].jogadores = new Map();
+        state.sides[i].picks = new Map();
         await renderSides();
       });
     });
@@ -112,8 +141,26 @@ window.Pages.trade = async function () {
         if (e.target.tagName !== 'INPUT') return;
         const i = parseInt(list.dataset.side, 10);
         const kind = list.dataset.kind;
-        if (e.target.checked) state.sides[i][kind].add(e.target.value);
-        else state.sides[i][kind].delete(e.target.value);
+        const itemId = e.target.value;
+        
+        if (e.target.checked) {
+          state.sides[i][kind].set(itemId, '');
+        } else {
+          state.sides[i][kind].delete(itemId);
+        }
+        updatePreview();
+      });
+    });
+    sidesEl.querySelectorAll('.receiver-select').forEach((sel) => {
+      sel.addEventListener('change', (e) => {
+        const sideIndex = parseInt(e.target.closest('.check-list').dataset.side, 10);
+        const kind = e.target.closest('.check-list').dataset.kind;
+        const itemId = e.target.dataset.item;
+        const receiver = e.target.value;
+        
+        if (state.sides[sideIndex][kind].has(itemId)) {
+          state.sides[sideIndex][kind].set(itemId, receiver);
+        }
         updatePreview();
       });
     });
@@ -130,16 +177,29 @@ window.Pages.trade = async function () {
   function updatePreview() {
     const lines = state.sides.map((side, i) => {
       const nome = (state.cache[side.timeId] && state.cache[side.timeId].nome) || side.timeId || `Lado ${i + 1}`;
-      const j = [...side.jogadores].map((id) => {
+      
+      const j = [...side.jogadores.entries()].map(([id, receiver]) => {
         const list = (state.cache[side.timeId] && state.cache[side.timeId].jogadores) || [];
         const p = list.find((x) => x.id === id);
-        return p ? p.jogador : id;
+        const playerName = p ? p.jogador : id;
+        if (receiver) {
+          const receiverTeam = teams.find((t) => t.id === receiver);
+          return `${playerName} → ${receiverTeam ? receiverTeam.nome : receiver}`;
+        }
+        return playerName;
       });
-      const p = [...side.picks].map((id) => {
+      
+      const p = [...side.picks.entries()].map(([id, receiver]) => {
         const list = (state.cache[side.timeId] && state.cache[side.timeId].picks) || [];
         const pk = list.find((x) => x.id === id);
-        return pk ? `${pk.rodada}ª ${pk.ano}` : id;
+        const pickDesc = pk ? `${pk.rodada}ª ${pk.ano} (orig: ${pk.timeOriginalNome || pk.timeOriginal})` : id;
+        if (receiver) {
+          const receiverTeam = teams.find((t) => t.id === receiver);
+          return `${pickDesc} → ${receiverTeam ? receiverTeam.nome : receiver}`;
+        }
+        return pickDesc;
       });
+      
       const items = [...j, ...p];
       return `${nome} envia: ${items.length ? items.join(', ') : '(nada)'}`;
     });
@@ -151,8 +211,8 @@ window.Pages.trade = async function () {
     const next = teams.find((t) => !used.has(t.id));
     state.sides.push({
       timeId: next ? next.id : '',
-      jogadores: new Set(),
-      picks: new Set()
+      jogadores: new Map(),
+      picks: new Map()
     });
     await renderSides();
   });
@@ -160,18 +220,49 @@ window.Pages.trade = async function () {
   view.querySelector('#confirm-trade').addEventListener('click', async () => {
     const msg = view.querySelector('#trade-msg');
     msg.innerHTML = '';
-    const lados = state.sides.map((s) => ({
-      timeId: s.timeId,
-      envia: {
-        jogadores: [...s.jogadores],
-        picks: [...s.picks]
-      }
-    }));
+    
+    const isMultiTeam = state.sides.length > 2;
+    const lados = state.sides.map((s) => {
+      const envia = {
+        jogadores: [...s.jogadores.entries()].map(([id, receiver]) => ({
+          id,
+          receiver: receiver || null
+        })),
+        picks: [...s.picks.entries()].map(([id, receiver]) => ({
+          id,
+          receiver: receiver || null
+        }))
+      };
+      return { timeId: s.timeId, envia };
+    });
     const ids = lados.map((l) => l.timeId);
     if (new Set(ids).size !== ids.length) {
       msg.innerHTML = UI.error('Cada lado precisa ser um time diferente.');
       return;
     }
+    if (isMultiTeam) {
+      const missingReceivers = lados.some((l) => 
+        l.envia.jogadores.some((j) => !j.receiver) || l.envia.picks.some((p) => !p.receiver)
+      );
+      if (missingReceivers) {
+        msg.innerHTML = UI.error('Em trocas de 3+ times, selecione para quem cada item vai.');
+        return;
+      }
+      
+      const receivers = new Set();
+      lados.forEach((l) => {
+        l.envia.jogadores.forEach((j) => { if (j.receiver) receivers.add(j.receiver); });
+        l.envia.picks.forEach((p) => { if (p.receiver) receivers.add(p.receiver); });
+      });
+      
+      const senderIds = new Set(lados.map((l) => l.timeId));
+      const invalidReceivers = [...receivers].filter((r) => senderIds.has(r));
+      if (invalidReceivers.length > 0) {
+        msg.innerHTML = UI.error('Um time não pode enviar itens para si mesmo.');
+        return;
+      }
+    }
+    
     const hasItems = lados.some(
       (l) => l.envia.jogadores.length + l.envia.picks.length > 0
     );
@@ -185,8 +276,8 @@ window.Pages.trade = async function () {
       msg.innerHTML = UI.success('Troca registrada: ' + result.trade.descricao);
       state.cache = {};
       state.sides.forEach((s) => {
-        s.jogadores = new Set();
-        s.picks = new Set();
+        s.jogadores = new Map();
+        s.picks = new Map();
       });
       await renderSides();
     } catch (e) {

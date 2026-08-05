@@ -432,72 +432,91 @@ begin
     v_jogadores := coalesce(v_envia->'jogadores', '[]'::jsonb);
     v_picks := coalesce(v_envia->'picks', '[]'::jsonb);
 
-    for v_jid in select jsonb_array_elements_text(v_jogadores)
-    loop
-      if not exists (select 1 from jogadores where id = v_jid and time_id = v_lado->>'timeId' and status != 'dispensado') then
-        raise exception 'Jogador % não pertence ao time % ou está dispensado', v_jid, v_lado->>'timeId';
-      end if;
-    end loop;
-
-    for v_pid in select jsonb_array_elements_text(v_picks)
-    loop
-      if not exists (select 1 from picks where id = v_pid and time_dono_atual = v_lado->>'timeId' and usado = false) then
-        raise exception 'Pick % não pertence ao time % ou já foi usado', v_pid, v_lado->>'timeId';
-      end if;
-    end loop;
-  end loop;
-
-  -- Aplica a troca (2 times: A→B, B→A)
-  if jsonb_array_length(v_lados) = 2 then
-    -- Lado 0 envia para lado 1
-    v_envia := coalesce(v_lados->0->'envia', '{}'::jsonb);
-    v_jogadores := coalesce(v_envia->'jogadores', '[]'::jsonb);
-    v_picks := coalesce(v_envia->'picks', '[]'::jsonb);
-    v_receiver_id := v_lados->1->>'timeId';
-
-    for v_jid in select jsonb_array_elements_text(v_jogadores)
-    loop
-      update jogadores set time_id = v_receiver_id where id = v_jid;
-    end loop;
-    for v_pid in select jsonb_array_elements_text(v_picks)
-    loop
-      update picks set time_dono_atual = v_receiver_id where id = v_pid;
-    end loop;
-
-    -- Lado 1 envia para lado 0
-    v_envia := coalesce(v_lados->1->'envia', '{}'::jsonb);
-    v_jogadores := coalesce(v_envia->'jogadores', '[]'::jsonb);
-    v_picks := coalesce(v_envia->'picks', '[]'::jsonb);
-    v_receiver_id := v_lados->0->>'timeId';
-
-    for v_jid in select jsonb_array_elements_text(v_jogadores)
-    loop
-      update jogadores set time_id = v_receiver_id where id = v_jid;
-    end loop;
-    for v_pid in select jsonb_array_elements_text(v_picks)
-    loop
-      update picks set time_dono_atual = v_receiver_id where id = v_pid;
-    end loop;
-  else
-    -- Multi-time: cada lado envia para o próximo (i+1 % n)
-    for v_count in 0..jsonb_array_length(v_lados) - 1
-    loop
-      v_lado := v_lados->v_count;
-      v_envia := coalesce(v_lado->'envia', '{}'::jsonb);
-      v_jogadores := coalesce(v_envia->'jogadores', '[]'::jsonb);
-      v_picks := coalesce(v_envia->'picks', '[]'::jsonb);
-      v_receiver_id := v_lados->((v_count + 1) % jsonb_array_length(v_lados))->>'timeId';
-
+    -- Valida jogadores (suporta formato antigo e novo)
+    if jsonb_typeof(v_jogadores->0) = 'object' then
+      -- Novo formato: array de objetos {id, receiver}
+      for v_j in 0..jsonb_array_length(v_jogadores) - 1
+      loop
+        v_jid := v_jogadores->v_j->>'id';
+        if not exists (select 1 from jogadores where id = v_jid and time_id = v_lado->>'timeId' and status != 'dispensado') then
+          raise exception 'Jogador % não pertence ao time % ou está dispensado', v_jid, v_lado->>'timeId';
+        end if;
+      end loop;
+    else
+      -- Formato antigo: array simples de IDs
       for v_jid in select jsonb_array_elements_text(v_jogadores)
       loop
-        update jogadores set time_id = v_receiver_id where id = v_jid;
+        if not exists (select 1 from jogadores where id = v_jid and time_id = v_lado->>'timeId' and status != 'dispensado') then
+          raise exception 'Jogador % não pertence ao time % ou está dispensado', v_jid, v_lado->>'timeId';
+        end if;
       end loop;
+    end if;
+
+    -- Valida picks (suporta formato antigo e novo)
+    if jsonb_typeof(v_picks->0) = 'object' then
+      -- Novo formato: array de objetos {id, receiver}
+      for v_p in 0..jsonb_array_length(v_picks) - 1
+      loop
+        v_pid := v_picks->v_p->>'id';
+        if not exists (select 1 from picks where id = v_pid and time_dono_atual = v_lado->>'timeId' and usado = false) then
+          raise exception 'Pick % não pertence ao time % ou já foi usado', v_pid, v_lado->>'timeId';
+        end if;
+      end loop;
+    else
+      -- Formato antigo: array simples de IDs
       for v_pid in select jsonb_array_elements_text(v_picks)
       loop
+        if not exists (select 1 from picks where id = v_pid and time_dono_atual = v_lado->>'timeId' and usado = false) then
+          raise exception 'Pick % não pertence ao time % ou já foi usado', v_pid, v_lado->>'timeId';
+        end if;
+      end loop;
+    end if;
+  end loop;
+
+  -- Aplica a troca
+  for v_count in 0..jsonb_array_length(v_lados) - 1
+  loop
+    v_lado := v_lados->v_count;
+    v_envia := coalesce(v_lado->'envia', '{}'::jsonb);
+    
+    -- Processa jogadores (suporta formato antigo array e novo objeto com receiver)
+    v_jogadores := coalesce(v_envia->'jogadores', '[]'::jsonb);
+    if jsonb_typeof(v_jogadores->0) = 'object' then
+      -- Novo formato: array de objetos {id, receiver}
+      for v_j in 0..jsonb_array_length(v_jogadores) - 1
+      loop
+        v_jid := v_jogadores->v_j->>'id';
+        v_receiver_id := v_jogadores->v_j->>'receiver';
+        update jogadores set time_id = v_receiver_id where id = v_jid;
+      end loop;
+    else
+      -- Formato antigo: array simples de IDs
+      for v_jid in select jsonb_array_elements_text(v_jogadores)
+      loop
+        v_receiver_id := v_lados->((v_count + 1) % jsonb_array_length(v_lados))->>'timeId';
+        update jogadores set time_id = v_receiver_id where id = v_jid;
+      end loop;
+    end if;
+    
+    -- Processa picks (suporta formato antigo array e novo objeto com receiver)
+    v_picks := coalesce(v_envia->'picks', '[]'::jsonb);
+    if jsonb_typeof(v_picks->0) = 'object' then
+      -- Novo formato: array de objetos {id, receiver}
+      for v_p in 0..jsonb_array_length(v_picks) - 1
+      loop
+        v_pid := v_picks->v_p->>'id';
+        v_receiver_id := v_picks->v_p->>'receiver';
         update picks set time_dono_atual = v_receiver_id where id = v_pid;
       end loop;
-    end loop;
-  end if;
+    else
+      -- Formato antigo: array simples de IDs
+      for v_pid in select jsonb_array_elements_text(v_picks)
+      loop
+        v_receiver_id := v_lados->((v_count + 1) % jsonb_array_length(v_lados))->>'timeId';
+        update picks set time_dono_atual = v_receiver_id where id = v_pid;
+      end loop;
+    end if;
+  end loop;
 
   -- Gera descrição
   v_descricao := '';
@@ -511,18 +530,45 @@ begin
 
     select nome_time into v_nome_time from times where id = v_lado->>'timeId';
 
-    for v_jid in select jsonb_array_elements_text(v_jogadores)
-    loop
-      select jogador into v_player_name from jogadores where id = v_jid;
-      v_items := array_append(v_items, coalesce(v_player_name, v_jid));
-    end loop;
+    -- Processa jogadores (suporta formato antigo e novo)
+    if jsonb_typeof(v_jogadores->0) = 'object' then
+      -- Novo formato: array de objetos {id, receiver}
+      for v_j in 0..jsonb_array_length(v_jogadores) - 1
+      loop
+        select v_jogadores->v_j->>'id' into v_jid;
+        select jogador into v_player_name from jogadores where id = v_jid;
+        select nome_time into v_receiver_id from times where id = v_jogadores->v_j->>'receiver';
+        v_items := array_append(v_items, coalesce(v_player_name, v_jid) || ' → ' || coalesce(v_receiver_id, '?'));
+      end loop;
+    else
+      -- Formato antigo: array simples de IDs
+      for v_jid in select jsonb_array_elements_text(v_jogadores)
+      loop
+        select jogador into v_player_name from jogadores where id = v_jid;
+        v_items := array_append(v_items, coalesce(v_player_name, v_jid));
+      end loop;
+    end if;
 
-    for v_pid in select jsonb_array_elements_text(v_picks)
-    loop
-      select rodada, ano, time_original into v_round, v_ano, v_original_team from picks where id = v_pid;
-      v_pick_desc := v_round || 'ª ' || v_ano;
-      v_items := array_append(v_items, v_pick_desc);
-    end loop;
+    -- Processa picks (suporta formato antigo e novo)
+    if jsonb_typeof(v_picks->0) = 'object' then
+      -- Novo formato: array de objetos {id, receiver}
+      for v_p in 0..jsonb_array_length(v_picks) - 1
+      loop
+        select v_picks->v_p->>'id' into v_pid;
+        select rodada, ano into v_round, v_ano from picks where id = v_pid;
+        select nome_time into v_receiver_id from times where id = v_picks->v_p->>'receiver';
+        v_pick_desc := v_round || 'ª ' || v_ano || ' → ' || coalesce(v_receiver_id, '?');
+        v_items := array_append(v_items, v_pick_desc);
+      end loop;
+    else
+      -- Formato antigo: array simples de IDs
+      for v_pid in select jsonb_array_elements_text(v_picks)
+      loop
+        select rodada, ano into v_round, v_ano from picks where id = v_pid;
+        v_pick_desc := v_round || 'ª ' || v_ano;
+        v_items := array_append(v_items, v_pick_desc);
+      end loop;
+    end if;
 
     if v_count > 0 then
       v_descricao := v_descricao || ' | ';
