@@ -9,20 +9,22 @@ window.Pages.history = async function (route) {
   // Busca nomes de jogadores e times para enriquecer o payload
   const teamsMap = new Map(teamsData.times.map(t => [t.id, t.nome]));
   
-  // Busca todos os jogadores e picks de todos os times para ter os nomes
+  // Busca todos os jogadores e picks de todos os times em paralelo
   const allPlayers = new Map();
   const allPicks = new Map();
-  for (const team of teamsData.times) {
-    try {
-      const teamData = await DynastyAPI.api('getTeam', { timeId: team.id });
-      teamData.jogadores.forEach(j => allPlayers.set(j.id, j.jogador));
-      teamData.picks.forEach(p => {
-        allPicks.set(p.id, `${p.rodada}ª ${p.ano}`);
-      });
-    } catch (e) {
-      console.warn(`Erro ao buscar dados do time ${team.id}:`, e.message);
-    }
-  }
+  await Promise.all(
+    teamsData.times.map(async (team) => {
+      try {
+        const teamData = await DynastyAPI.api('getTeam', { timeId: team.id });
+        teamData.jogadores.forEach(j => allPlayers.set(j.id, j.jogador));
+        teamData.picks.forEach(p => {
+          allPicks.set(p.id, `${p.rodada}ª ${p.ano}`);
+        });
+      } catch (e) {
+        console.warn(`Erro ao buscar dados do time ${team.id}:`, e.message);
+      }
+    })
+  );
 
   const items = data.trades
     .map(
