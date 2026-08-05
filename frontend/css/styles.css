@@ -731,6 +731,7 @@ table.data tr:hover td {
 
 .trade-item.expanded .trade-details {
   display: block;
+  animation: slideDown 0.3s ease;
 }
 
 .trade-details ul {
