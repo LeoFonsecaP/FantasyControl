@@ -95,6 +95,14 @@
   }
 
   function shell(user) {
+    const hasTeam = !!(user && user.teamId);
+    const isAdmin = !!(user && user.isAdmin);
+    
+    // Keeps: disponível para usuários com time OU admins
+    const showKeeps = hasTeam || isAdmin;
+    // Gestão: disponível apenas para admins
+    const showManagement = isAdmin;
+
     return `
       <header class="app-header">
         <a class="brand" href="#/dashboard">Mickey Mouse Dynasty</a>
@@ -103,13 +111,15 @@
           <a href="#/dashboard" data-route="dashboard">Dashboard</a>
           <a href="#/alerts" data-route="alerts">Free Agents</a>
           <a href="#/trade" data-route="trade">Nova troca</a>
-          <a href="#/keeps" data-route="keeps">Keeps</a>
+          ${showKeeps ? `<a href="#/keeps" data-route="keeps">Keeps</a>` : ''}
           <a href="#/history" data-route="history">Histórico</a>
           <a href="#/standings" data-route="standings">Standings</a>
-          <a href="#/management" data-route="management">Gestão</a>
+          ${showManagement ? `<a href="#/management" data-route="management">Gestão</a>` : ''}
         </nav>
         <div class="user-info">
-          <span class="user-chip"><strong>${escapeHtml(user.teamName || 'Convidado')}</strong></span>
+          <span class="user-chip" id="user-chip" style="cursor: ${hasTeam ? 'pointer' : 'default'};" title="${hasTeam ? 'Clique para editar seu time' : ''}">
+            <strong>${escapeHtml(user.teamName || 'Convidado')}</strong>
+          </span>
           <button class="btn btn-ghost" type="button" id="btn-logout">Sair</button>
         </div>
       </header>
@@ -201,6 +211,15 @@
       await DynastyAPI.clearSession();
       location.reload();
     });
+    
+    // Se usuário tem time, adiciona evento para editar ao clicar no chip
+    const userChip = app.querySelector('#user-chip');
+    if (userChip && currentUser && currentUser.teamId) {
+      userChip.addEventListener('click', () => {
+        location.hash = '#/team/' + currentUser.teamId + '?edit=1';
+      });
+    }
+    
     window.App = { user: currentUser, navigate, refreshUser };
     console.log('[Boot] Completo, navegando...');
     await navigate();

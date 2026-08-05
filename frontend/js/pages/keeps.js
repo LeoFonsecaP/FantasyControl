@@ -4,11 +4,26 @@ window.Pages.keeps = async function () {
   const view = document.getElementById('view');
   const teamsData = await DynastyAPI.api('listTeams');
   const teams = teamsData.times;
-  const defaultTeam = (App.user && App.user.teamId) || (teams[0] && teams[0].id) || '';
+  
+  // Verifica se usuário é admin ou tem time
+  const isAdmin = !!(App.user && App.user.isAdmin);
+  const userTeamId = (App.user && App.user.teamId) || '';
+  
+  // Se não é admin e não tem time, não pode acessar
+  if (!isAdmin && !userTeamId) {
+    view.innerHTML = UI.error('Você precisa estar vinculado a um time para acessar esta página.');
+    return;
+  }
+  
+  // Se não é admin, usa apenas o time do usuário (sem seleção)
+  // Se é admin, pode escolher qualquer time
+  const defaultTeam = isAdmin ? (userTeamId || (teams[0] && teams[0].id) || '') : userTeamId;
+  const showTeamSelect = isAdmin;
 
   view.innerHTML = `
     <h1 class="page-title">Keeps</h1>
     <p class="page-sub">Marque mantido ou dispensado para a temporada atual.</p>
+    ${showTeamSelect ? `
     <div class="toolbar">
       <label class="field">Time
         <select id="keep-team">
@@ -21,6 +36,7 @@ window.Pages.keeps = async function () {
         </select>
       </label>
     </div>
+    ` : ''}
     <div id="keep-msg"></div>
     <div id="keep-list"></div>
     <div class="toolbar" style="margin-top:1.5rem">
@@ -31,7 +47,7 @@ window.Pages.keeps = async function () {
   const decisions = {};
 
   async function load() {
-    const timeId = view.querySelector('#keep-team').value;
+    const timeId = showTeamSelect ? view.querySelector('#keep-team').value : defaultTeam;
     const list = view.querySelector('#keep-list');
     list.innerHTML = UI.loading();
     Object.keys(decisions).forEach((k) => delete decisions[k]);
@@ -79,11 +95,13 @@ window.Pages.keeps = async function () {
     }
   }
 
-  view.querySelector('#keep-team').addEventListener('change', load);
+  if (showTeamSelect) {
+    view.querySelector('#keep-team').addEventListener('change', load);
+  }
   view.querySelector('#save-keeps').addEventListener('click', async () => {
     const msg = view.querySelector('#keep-msg');
     msg.innerHTML = '';
-    const timeId = view.querySelector('#keep-team').value;
+    const timeId = showTeamSelect ? view.querySelector('#keep-team').value : defaultTeam;
     const decisoes = Object.keys(decisions).map((id) => ({
       playerId: id,
       status: decisions[id]

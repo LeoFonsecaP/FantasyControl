@@ -73,6 +73,29 @@ window.DYNASTY_REDIRECT_URL = 'https://SEU-USUARIO.github.io/FantasyControl/';
 | `upsertPlayer` | `rpc_upsert_player(...)` |
 | `listTeams` | `rpc_list_teams()` |
 | `linkUserToTeam` | `rpc_link_user_to_team(p_email, p_time_id)` |
+| `updateOwnTeam` | `rpc_update_own_team(p_nome, p_responsavel, p_email)` |
+| `advanceSeason` | `rpc_advance_season()` |
+
+## Funcionalidades por perfil
+
+### Usuário com time
+- **Editar próprio time**: Clique no nome do time no header para editar nome, responsável e e-mail
+- **Keeps**: Pode gerenciar keeps apenas do seu próprio time (seleção de time oculta)
+
+### Administrador
+- **Keeps**: Pode gerenciar keeps de qualquer time (com seletor de time)
+- **Gestão**: Acesso à página de gestão completa com:
+  - Cadastro e edição de times
+  - Vinculação de usuários a times
+  - **Avançar temporada**: Botão que automaticamente:
+    - Incrementa o ano da temporada
+    - Remove jogadores não mantidos (dispensados e ativos) de todos os times
+    - Deleta todas as picks do ano atual
+    - Cria novas picks 1-8 para todos os times para daqui a 3 temporadas
+
+### Menu condicional
+- **Keeps**: Visível apenas para usuários com time ou administradores
+- **Gestão**: Visível apenas para administradores
 
 ## Regras de keeper
 
@@ -109,6 +132,13 @@ py -m http.server 5173 --directory frontend
 - [ ] Troca 2 times atualiza donos e aparece no histórico
 - [ ] Keep bloqueia jogador fora do limite
 - [ ] Admin grava standing + campeão no hall of fame
+- [ ] Usuário com time consegue editar próprio time clicando no nome no header
+- [ ] Usuário sem time não vê opção de Keeps no menu
+- [ ] Usuário com time vê apenas seu time na página de Keeps (sem seletor)
+- [ ] Admin vê todos os times na página de Keeps (com seletor)
+- [ ] Página de Gestão não aparece para não-admins
+- [ ] Página de Gestão não tem formulário de jogador nem lista de jogadores
+- [ ] Botão "Avançar temporada" funciona corretamente na gestão
 
 ## Licença
 

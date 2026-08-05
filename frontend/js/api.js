@@ -123,16 +123,26 @@
           p_status: payload.status || 'ativo'
         });
         break;
-      case 'listTeams':
-        result = await sb.rpc('rpc_list_teams');
-        break;
-      case 'linkUserToTeam':
-        result = await sb.rpc('rpc_link_user_to_team', {
-          p_email: payload.email,
-          p_time_id: payload.timeId || null
-        });
-        break;
-      case 'ping':
+       case 'listTeams':
+         result = await sb.rpc('rpc_list_teams');
+         break;
+       case 'linkUserToTeam':
+         result = await sb.rpc('rpc_link_user_to_team', {
+           p_email: payload.email,
+           p_time_id: payload.timeId || null
+         });
+         break;
+       case 'updateOwnTeam':
+         result = await sb.rpc('rpc_update_own_team', {
+           p_nome: payload.nome || null,
+           p_responsavel: payload.responsavel || null,
+           p_email: payload.email || null
+         });
+         break;
+       case 'advanceSeason':
+         result = await sb.rpc('rpc_advance_season');
+         break;
+       case 'ping':
         return { pong: true };
       default:
         throw new Error('Ação desconhecida: ' + action);

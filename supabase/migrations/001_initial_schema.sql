@@ -861,8 +861,12 @@ begin
       ) order by j.jogador)
       from jogadores j
     ), '[]'::jsonb),
-    'admins', coalesce((
-      select jsonb_agg(email) from profiles where is_admin = true
+    'users', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'email', p.email,
+        'isAdmin', p.is_admin
+      ) order by p.email)
+      from profiles p
     ), '[]'::jsonb)
   ) into v_result;
 

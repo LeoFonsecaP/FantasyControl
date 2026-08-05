@@ -25,22 +25,7 @@
             .join('')
         : `<tr><td colspan="5">${UI.empty('Nenhum time cadastrado.')}</td></tr>`;
 
-      const playerRows = players.length
-        ? players
-            .map(
-              (player) => `
-              <tr>
-                <td>${UI.escapeHtml(player.id)}</td>
-                <td>${UI.escapeHtml(player.jogador)}</td>
-                <td>${UI.escapeHtml(player.timeId)}</td>
-                <td>${player.round}</td>
-                <td>${player.anoDraft}</td>
-                <td>${UI.escapeHtml(player.status)}</td>
-                <td><button class="btn btn-ghost" type="button" data-edit-player="${UI.escapeHtml(player.id)}">Editar</button></td>
-              </tr>`
-            )
-            .join('')
-        : `<tr><td colspan="7">${UI.empty('Nenhum jogador cadastrado.')}</td></tr>`;
+      // Lista de jogadores removida conforme solicitado
 
       const teamOptions = teams.length
         ? teams
@@ -91,25 +76,6 @@
             </form>
           </section>
 
-          <section class="side-panel">
-            <h2>Jogador</h2>
-            <form id="player-form" class="form-stack">
-              <input type="hidden" id="player-id" />
-              <label class="field">Nome do jogador<input type="text" id="player-nome" required /></label>
-              <label class="field">Time<select id="player-team">${teamOptions}</select></label>
-              <label class="field">Rodada<input type="number" id="player-round" min="1" value="1" /></label>
-              <label class="field">Ano do draft<input type="number" id="player-ano" value="${new Date().getFullYear()}" /></label>
-              <label class="field">Status<select id="player-status">
-                <option value="ativo">Ativo</option>
-                <option value="mantido">Mantido</option>
-                <option value="dispensado">Dispensado</option>
-              </select></label>
-              <div class="toolbar">
-                <button class="btn" type="submit">Salvar jogador</button>
-                <button class="btn btn-ghost" type="button" id="player-reset">Limpar</button>
-              </div>
-            </form>
-          </section>
 
           <section class="side-panel">
             <h2>Vincular usuário a time</h2>
@@ -146,20 +112,13 @@
           </table>
         </div>
 
-        <h2>Jogadores cadastrados</h2>
-        <div class="table-wrap">
-          <table class="data">
-            <thead>
-              <tr><th>ID</th><th>Jogador</th><th>Time</th><th>Rodada</th><th>Ano draft</th><th>Status</th><th></th></tr>
-            </thead>
-            <tbody>${playerRows}</tbody>
-          </table>
+        <div class="toolbar" style="margin-top: 1rem;">
+          <button class="btn btn-ghost" type="button" id="btn-advance-season">Avançar temporada</button>
         </div>
       `;
 
       const msg = view.querySelector('#mgmt-msg');
       const teamForm = view.querySelector('#team-form');
-      const playerForm = view.querySelector('#player-form');
       const linkForm = view.querySelector('#link-form');
 
       function showMessage(text, type) {
@@ -171,16 +130,7 @@
         view.querySelector('#team-id').value = '';
       }
 
-      function resetPlayerForm() {
-        playerForm.reset();
-        view.querySelector('#player-id').value = '';
-        view.querySelector('#player-round').value = '1';
-        view.querySelector('#player-ano').value = String(new Date().getFullYear());
-        view.querySelector('#player-status').value = 'ativo';
-      }
-
       view.querySelector('#team-reset').addEventListener('click', resetTeamForm);
-      view.querySelector('#player-reset').addEventListener('click', resetPlayerForm);
 
       teamForm.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -193,24 +143,6 @@
             email: view.querySelector('#team-email').value.trim()
           });
           showMessage('Time salvo com sucesso.');
-        } catch (e) {
-          showMessage(e.message || String(e), 'error');
-        }
-      });
-
-      playerForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        showMessage('');
-        try {
-          await DynastyAPI.api('upsertPlayer', {
-            id: view.querySelector('#player-id').value.trim(),
-            jogador: view.querySelector('#player-nome').value.trim(),
-            timeId: view.querySelector('#player-team').value,
-            round: parseInt(view.querySelector('#player-round').value, 10) || 1,
-            anoDraft: parseInt(view.querySelector('#player-ano').value, 10) || new Date().getFullYear(),
-            status: view.querySelector('#player-status').value
-          });
-          showMessage('Jogador salvo com sucesso.');
         } catch (e) {
           showMessage(e.message || String(e), 'error');
         }
@@ -249,21 +181,6 @@
         });
       });
 
-      view.querySelectorAll('[data-edit-player]').forEach((button) => {
-        button.addEventListener('click', () => {
-          const playerId = button.getAttribute('data-edit-player');
-          const player = players.find((item) => item.id === playerId);
-          if (!player) return;
-          view.querySelector('#player-id').value = player.id;
-          view.querySelector('#player-nome').value = player.jogador || '';
-          view.querySelector('#player-team').value = player.timeId || '';
-          view.querySelector('#player-round').value = String(player.round || 1);
-          view.querySelector('#player-ano').value = String(player.anoDraft || new Date().getFullYear());
-          view.querySelector('#player-status').value = player.status || 'ativo';
-          view.querySelector('#player-nome').focus();
-        });
-      });
-
       view.querySelectorAll('[data-link-user]').forEach((button) => {
         button.addEventListener('click', () => {
           const email = button.getAttribute('data-link-user');
@@ -292,6 +209,25 @@
           }
         });
       });
+
+      // Botão avançar temporada
+      const btnAdvance = view.querySelector('#btn-advance-season');
+      if (btnAdvance) {
+        btnAdvance.addEventListener('click', async () => {
+          const confirmed = confirm('Tem certeza que deseja avançar a temporada?\n\nEsta ação irá:\n- Mudar o ano da temporada para o seguinte\n- Remover jogadores não mantidos de todos os times\n- Deletar todas as escolhas de draft do ano atual\n- Criar novas escolhas 1-8 para todos os times para daqui a 3 temporadas\n\nEsta ação não pode ser desfeita.');
+          if (!confirmed) return;
+          
+          showMessage('');
+          try {
+            const result = await DynastyAPI.api('advanceSeason');
+            showMessage(result.mensagem || 'Temporada avançada com sucesso!');
+            await new Promise((r) => setTimeout(r, 2000));
+            location.reload();
+          } catch (e) {
+            showMessage(e.message || String(e), 'error');
+          }
+        });
+      }
     } catch (e) {
       view.innerHTML = UI.error(e.message || String(e));
     }
