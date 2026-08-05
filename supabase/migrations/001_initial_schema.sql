@@ -47,6 +47,7 @@ create table trocas (
   time_1_id text references times(id),
   time_2_id text references times(id),
   payload_json jsonb,
+  created_by uuid references auth.users(id),
   created_at timestamptz default now()
 );
 
@@ -366,7 +367,11 @@ begin
             (select nome_time from times where id = tr.time_2_id)
           )
         ),
-        'payload', tr.payload_json
+        'payload', tr.payload_json,
+        'criadoPor', coalesce(
+          (select email from auth.users where id = tr.created_by),
+          'Sistema'
+        )
       ) order by tr.data desc
     ), '[]'::jsonb)
   ) into v_result
@@ -585,14 +590,15 @@ begin
 
   v_payload := jsonb_build_object('lados', v_lados);
 
-  insert into trocas (id, data, descricao, time_1_id, time_2_id, payload_json)
+  insert into trocas (id, data, descricao, time_1_id, time_2_id, payload_json, created_by)
   values (
     v_trade_id,
     current_date,
     v_descricao,
     v_time_ids[1],
     case when array_length(v_time_ids, 1) > 1 then v_time_ids[2] else null end,
-    v_payload
+    v_payload,
+    auth.uid()
   );
 
   return jsonb_build_object(

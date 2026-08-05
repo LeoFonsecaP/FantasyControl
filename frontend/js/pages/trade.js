@@ -2,6 +2,14 @@ window.Pages = window.Pages || {};
 
 window.Pages.trade = async function () {
   const view = document.getElementById('view');
+  
+  // Verifica se usuário tem time
+  const hasTeam = !!(App.user && App.user.teamId);
+  if (!hasTeam) {
+    view.innerHTML = UI.error('Você precisa estar vinculado a um time para criar trocas.');
+    return;
+  }
+  
   const teamsData = await DynastyAPI.api('listTeams');
   const teams = teamsData.times;
 

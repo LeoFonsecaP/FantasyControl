@@ -62,8 +62,8 @@ window.DYNASTY_REDIRECT_URL = 'https://SEU-USUARIO.github.io/FantasyControl/';
 | `getTeam` | `rpc_get_team(p_time_id)` |
 | `getExpiring` | `rpc_get_expiring(p_ano)` |
 | `getFreeAgents` | `rpc_get_free_agents(p_ano)` |
-| `getTrades` | `rpc_get_trades(p_time_id)` |
-| `createTrade` | `rpc_create_trade(p_lados)` |
+| `getTrades` | `rpc_get_trades(p_time_id)` - retorna `criadoPor` |
+| `createTrade` | `rpc_create_trade(p_lados)` - registra `created_by` |
 | `getKeepCandidates` | `rpc_get_keep_candidates(p_time_id)` |
 | `setKeeps` | `rpc_set_keeps(p_time_id, p_decisoes)` |
 | `getStandings` | `rpc_get_standings(p_ano)` |
@@ -81,6 +81,8 @@ window.DYNASTY_REDIRECT_URL = 'https://SEU-USUARIO.github.io/FantasyControl/';
 ### Usuário com time
 - **Editar próprio time**: Clique no nome do time no header para editar nome, responsável e e-mail
 - **Keeps**: Pode gerenciar keeps apenas do seu próprio time (seleção de time oculta)
+- **Nova troca**: Pode criar trocas envolvendo qualquer time
+- Toda troca registra automaticamente o e-mail de quem criou
 
 ### Administrador
 - **Keeps**: Pode gerenciar keeps de qualquer time (com seletor de time)
@@ -94,6 +96,7 @@ window.DYNASTY_REDIRECT_URL = 'https://SEU-USUARIO.github.io/FantasyControl/';
     - Cria novas picks 1-8 para todos os times para daqui a 3 temporadas
 
 ### Menu condicional
+- **Nova troca**: Visível apenas para usuários com time vinculado
 - **Keeps**: Visível apenas para usuários com time ou administradores
 - **Gestão**: Visível apenas para administradores
 
@@ -139,6 +142,10 @@ py -m http.server 5173 --directory frontend
 - [ ] Página de Gestão não aparece para não-admins
 - [ ] Página de Gestão não tem formulário de jogador nem lista de jogadores
 - [ ] Botão "Avançar temporada" funciona corretamente na gestão
+- [ ] Usuário sem time não consegue acessar página de Nova troca
+- [ ] Menu "Nova troca" não aparece para usuários sem time
+- [ ] Trocas registram corretamente o usuário que criou
+- [ ] Histórico de trocas mostra quem criou cada troca
 
 ## Licença
 

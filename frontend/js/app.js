@@ -100,6 +100,8 @@
     
     // Keeps: disponível para usuários com time OU admins
     const showKeeps = hasTeam || isAdmin;
+    // Nova troca: disponível apenas para usuários com time
+    const showTrade = hasTeam;
     // Gestão: disponível apenas para admins
     const showManagement = isAdmin;
 
@@ -110,7 +112,7 @@
         <nav class="nav" id="main-nav">
           <a href="#/dashboard" data-route="dashboard">Dashboard</a>
           <a href="#/alerts" data-route="alerts">Free Agents</a>
-          <a href="#/trade" data-route="trade">Nova troca</a>
+          ${showTrade ? `<a href="#/trade" data-route="trade">Nova troca</a>` : ''}
           ${showKeeps ? `<a href="#/keeps" data-route="keeps">Keeps</a>` : ''}
           <a href="#/history" data-route="history">Histórico</a>
           <a href="#/standings" data-route="standings">Standings</a>
