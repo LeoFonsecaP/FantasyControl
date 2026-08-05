@@ -20,10 +20,12 @@ window.Pages.keeps = async function () {
             .join('')}
         </select>
       </label>
-      <button class="btn" type="button" id="save-keeps">Salvar decisões</button>
     </div>
     <div id="keep-msg"></div>
     <div id="keep-list"></div>
+    <div class="toolbar" style="margin-top:1.5rem">
+      <button class="btn" type="button" id="save-keeps" style="width:100%">Salvar decisões</button>
+    </div>
   `;
 
   const decisions = {};
