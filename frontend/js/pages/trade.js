@@ -45,12 +45,17 @@ window.Pages.trade = async function () {
   }
 
   function teamOptions(selected) {
-    return teams
-      .map(
-        (t) =>
-          `<option value="${UI.escapeHtml(t.id)}" ${t.id === selected ? 'selected' : ''}>${UI.escapeHtml(t.nome)}</option>`
-      )
-      .join('');
+    const used = new Set(state.sides.map((s) => s.timeId).filter(Boolean));
+    return `
+      <option value="">Selecione um time...</option>
+      ${teams
+        .filter((t) => !used.has(t.id))
+        .map(
+          (t) =>
+            `<option value="${UI.escapeHtml(t.id)}" ${t.id === selected ? 'selected' : ''}>${UI.escapeHtml(t.nome)}</option>`
+        )
+        .join('')}
+    `;
   }
 
   async function renderSides() {
