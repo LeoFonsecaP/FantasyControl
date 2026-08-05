@@ -67,7 +67,7 @@ window.Pages.history = async function (route) {
 
         return `
         <div class="trade-item" data-trade-id="${UI.escapeHtml(t.id)}">
-          <div class="trade-header">
+          <div class="trade-header" onclick="this.parentElement.classList.toggle('expanded')">
             <div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:center">
               <div>
                 <strong>${UI.escapeHtml(t.id)}</strong>
@@ -77,7 +77,7 @@ window.Pages.history = async function (route) {
             </div>
             <div class="muted" style="font-size:0.85rem;margin-top:0.35rem">${timesEnvolvidos}</div>
           </div>
-          <div class="trade-details" style="display:none;">
+          <div class="trade-details">
             ${expandedContent || '<div class="muted">Detalhes não disponíveis</div>'}
           </div>
         </div>`;
@@ -101,20 +101,10 @@ window.Pages.history = async function (route) {
         </select>
       </label>
     </div>
-    <div class="hof-list">
+    <div class="hof-list" id="trades-list">
       ${items || UI.empty('Nenhuma troca registrada ainda.')}
     </div>
   `;
-
-  // Adiciona event listeners para expandir/recolher
-  view.querySelectorAll('.trade-header').forEach(header => {
-    header.addEventListener('click', function() {
-      const tradeItem = this.closest('.trade-item');
-      if (tradeItem) {
-        tradeItem.classList.toggle('expanded');
-      }
-    });
-  });
 
   view.querySelector('#hist-team').addEventListener('change', (e) => {
     const v = e.target.value;
